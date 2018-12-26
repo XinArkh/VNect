@@ -1,0 +1,1 @@
+Contact the model author to obtain the caffe data, then drop a) vnect_model.caffemodel, and b) vnect_net.prototxt here.
