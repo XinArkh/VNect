@@ -7,13 +7,9 @@ For the caffe model: please contact the author of the paper.
 ## Environments
 
 - Windows 10 Pro
-
 - Python 3.5.6 (64 bit)
-
 - opencv-python 3.4.4.19
-
 - tensorflow-gpu 1.12.0
-
 - [pycaffe](https://github.com/BVLC/caffe/tree/windows)
 
 ## Usage
@@ -29,3 +25,7 @@ For the caffe model: please contact the author of the paper.
 2. Every input is assumed to contain 21 joints to be found, which means it is easy to fit wrong results when a joint is actually not in the input.
 3. The results of the model in this implementation are not as good as the results shown in the video provided by the author, especially when predicting unusual postures (e.g. sitting on the ground).
 
+## Reference Repositories
+
+- [timctho/VNect-tensorflow](https://github.com/timctho/VNect-tensorflow)
+- [latte0/3d-pose-estimation](https://github.com/timctho/VNect-tensorflow)
