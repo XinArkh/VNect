@@ -29,4 +29,4 @@ For the caffe model: please contact the author of the paper.
 
 - original MATLAB implementation provided by the author
 - [timctho/VNect-tensorflow](https://github.com/timctho/VNect-tensorflow)
-- [latte0/3d-pose-estimation](https://github.com/timctho/VNect-tensorflow)
+- [EJShim/vnect_estimator](https://github.com/EJShim/vnect_estimator)
