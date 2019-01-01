@@ -2,14 +2,12 @@
 
 An tensorflow implementation of [VNect: Real-time 3D Human Pose Estimation with a Single RGB Camera](http://gvv.mpi-inf.mpg.de/projects/VNect/).
 
-| ![img](./test_src/test_pic_show.png)    |
-| --------------------------------------- |
-| ![img2](./test_src/test_video_show.gif) |
-
-
-
-
-
+<p align="center">
+    <img src="./test_src/test_pic_show.png">
+</p>
+<p align="center">
+    <img src="./test_src/test_video_show.gif">
+</p>
 For the caffe model: please contact the author of the paper.
 
 ## Environments
