@@ -165,6 +165,9 @@ class VnectEstimator:
         self.ax_3d.w_zaxis.line.set_color(white)
         utils.draw_limbs_3d(self.ax_3d, self.joints_3d, self.limb_parents)
 
+        plt.pause(0.00001)  # this line is unnecessary under matplotlib 3.0.0, but ought to be activated
+                      		  # under matplotlib 3.0.2 (other versions not tested)
+
     def run(self):
         start = False
         success, frame_raw = self.cameraCapture.read()
