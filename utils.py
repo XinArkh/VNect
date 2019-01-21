@@ -18,7 +18,9 @@ def img_scale(img, scale):
 
 def img_padding(img, box_size, offset, padNum=0):
     """
-    pad the image in left and right sides averagely to fill the bounding box
+    pad the image in left and right sides averagely to fill the box size
+
+    padNum: the number to be filled (0-->(0, 0, 0)==black; 128-->(128, 128, 128)==grey)
     """
     h, w = img.shape[:2]
     assert h == box_size, 'height of the image not equal to box size'
@@ -30,12 +32,12 @@ def img_padding(img, box_size, offset, padNum=0):
     return img_padded
 
 
-def read_square_image(img, box_size):
+def img_scale_squareify(img, box_size):
     """
-    scale and crop the raw image to get the square bounding box
+    scale and squareify the image to get a square image with standard box size
 
     img: BGR image
-    boxsize: the length of the square area (bounding box)
+    boxsize: the length of the square area
     """
     h, w = img.shape[:2]
     scale = box_size / h
@@ -70,14 +72,14 @@ def img_scale_padding(img, scale, padNum=0):
     return img_scaled_padded
 
 
-def extract_2d_joints_from_heatmap(heatmap, box_size):
+def extract_2d_joints_from_heatmap(heatmap, box_size, hm_factor):
     """
     rescale the heatmap to CNN input size, then record the coordinates of each joints
 
     joints_2d: a joints_num x 2 array, each row contains [row, column] coordinates of the corresponding joint
     """
     assert heatmap.shape[0] == heatmap.shape[1]
-    heatmap_scaled = img_scale(heatmap, box_size/heatmap.shape[0])
+    heatmap_scaled = img_scale(heatmap, hm_factor)
 
     joints_2d = np.zeros((heatmap_scaled.shape[2], 2), dtype=np.int32)
     for joint_num in range(heatmap_scaled.shape[2]):
@@ -87,23 +89,26 @@ def extract_2d_joints_from_heatmap(heatmap, box_size):
     return joints_2d
 
 
-def extract_3d_joints_from_heatmap(joints_2d, x_hm, y_hm, z_hm, input_size, hm_factor):
+def extract_3d_joints_from_heatmap(joints_2d, x_hm, y_hm, z_hm, box_size, hm_factor):
     """
     obtain the 3D coordinates of each joint from its 2D coordinates
 
     joints_3d: a joints_num x 3 array, each row contains [x, y, z] coordinates of the corresponding joint
+
+    Notation:
     x direction: left --> right
     y direction: up --> down
     z direction: forawrd --> backward
     """
+    scaler = 100
     joints_3d = np.zeros((x_hm.shape[2], 3), dtype=np.float32)
 
     for joint_num in range(x_hm.shape[2]):
         coord_2d_h, coord_2d_w = joints_2d[joint_num][:]
 
-        joint_x = x_hm[max(int(coord_2d_h/hm_factor), 1), max(int(coord_2d_w/hm_factor), 1), joint_num] * 100
-        joint_y = y_hm[max(int(coord_2d_h/hm_factor), 1), max(int(coord_2d_w/hm_factor), 1), joint_num] * 100
-        joint_z = z_hm[max(int(coord_2d_h/hm_factor), 1), max(int(coord_2d_w/hm_factor), 1), joint_num] * 100
+        joint_x = x_hm[max(int(coord_2d_h/hm_factor), 1), max(int(coord_2d_w/hm_factor), 1), joint_num] * scaler
+        joint_y = y_hm[max(int(coord_2d_h/hm_factor), 1), max(int(coord_2d_w/hm_factor), 1), joint_num] * scaler
+        joint_z = z_hm[max(int(coord_2d_h/hm_factor), 1), max(int(coord_2d_w/hm_factor), 1), joint_num] * scaler
         joints_3d[joint_num, :] = [joint_x, joint_y, joint_z]
 
     # Subtract the root location to normalize the data
@@ -121,7 +126,7 @@ def draw_limbs_2d(img, joints_2d, limb_parents):
         length = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
         deg = math.degrees(math.atan2(x1 - x2, y1 - y2))
         polygon = cv2.ellipse2Poly((int((y1 + y2) / 2), int((x1 + x2) / 2)), (int(length / 2), 3), int(deg), 0, 360, 1)
-        cv2.fillConvexPoly(img, polygon, color=(128, 128, 128))
+        img = cv2.fillConvexPoly(img, polygon, color=(14, 127, 255))
     return img
 
 

@@ -7,35 +7,45 @@ import time
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-# from mpl_toolkits import mplot3d
+from mpl_toolkits import mplot3d
 import utils
 
 
 class VnectEstimator:
-    def __init__(self, video=0, box_size=368, hm_factor=8, joints_num=21, scales=(1.0, 0.7)):
+    def __init__(self, video=0, T=False):
         print('Initializing...')
 
+        # the input camera serial number of the PC (int), or PATH to input video (str)
+        self.video = video
+        # whether apply transposed matrix
+        self.T = T
+
+        ## hyper-parameters ##
         # the side length of the bounding box
-        self.box_size = box_size
+        self.box_size = 368
         # this factor indicates that the input box size is 8 times the side length of the output heatmaps
-        self.hm_factor = hm_factor
+        self.hm_factor = 8
         # number of the joints to be detected
-        self.joints_num = joints_num
-        # to scale the input bounding box with different ratio, no more than 1.0
-        self.scales = scales
-        # Limb parents of each joint
-        self.limb_parents = [1, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
+        self.joints_num = 21
+        # the ratio factors to scale the input image crops, no more than 1.0
+        self.scales = [1]  # or [1, 0.7] to be consistent with the author
+        # parent joint indexes of each joint (for plotting the skeleton lines)
+        self.joint_parents = [16, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
+        # filter param
+        self.joints_filter_threshold = 100
+        # filter param
+        self.joints_filter_m = 0.8
 
+        ## flags ##
+        # flag for determining whether the left mouse button is clicked
         self._clicked = False
-        self._first_frame = True
 
-        # use HOG method to initialize bounding box
-        self.hog = cv2.HOGDescriptor()
-        self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
-
+        ## place holders ##
         self.rect = None
+        self.frame_square = None
+        self.input_batch = None
 
-        # initialize the CNN model
+        # VNect model
         self.sess = tf.Session()
         saver = tf.train.import_meta_graph('./models/tf_model/vnect_tf.meta')
         saver.restore(self.sess, tf.train.latest_checkpoint('./models/tf_model/'))
@@ -46,29 +56,24 @@ class VnectEstimator:
         self.y_heatmap = graph.get_tensor_by_name('split_2:2')
         self.z_heatmap = graph.get_tensor_by_name('split_2:3')
 
-        self.frame_square = None
-        self.input_batch = None
-
+        # init the joint coord placeholders
         self.joints_2d = np.zeros((self.joints_num, 2), dtype=np.int32)
         self.joints_2d_prior = np.zeros((self.joints_num, 2), dtype=np.int32)
         self.joints_3d = np.zeros((self.joints_num, 3), dtype=np.float32)
         self.joints_3d_prior = np.zeros((self.joints_num, 3), dtype=np.float32)
 
-        self.joints_filter_threshold = 100
-        self.joints_filter_m = 0.8
-
+        # catch the video stream
         try:
             self.cameraCapture = cv2.VideoCapture(video)
         except Exception as e:
             print(e)
             raise
 
+        # frame width and height
         self.W = int(self.cameraCapture.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.H = int(self.cameraCapture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-        self._box_init_window = 'box init'
-        cv2.namedWindow(self._box_init_window)
-        cv2.setMouseCallback(self._box_init_window, self._on_mouse)
+        if self.T:
+            self.W, self.H = self.H, self.W
 
         # 3D joints visualization
         self.fig = plt.figure()
@@ -78,6 +83,15 @@ class VnectEstimator:
 
         print('Initializing done.')
 
+    def BB_init(self):
+        # use HOG method to initialize bounding box
+        self.hog = cv2.HOGDescriptor()
+        self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+        
+        self._box_init_window_name = 'Bounding Box Initialization'
+        cv2.namedWindow(self._box_init_window_name)
+        cv2.setMouseCallback(self._box_init_window_name, self._on_mouse)
+
     def _on_mouse(self, event, x, y, flags, param):
         """
         attain mouse clicking message
@@ -85,25 +99,35 @@ class VnectEstimator:
         if event == cv2.EVENT_LBUTTONUP:
             self._clicked = True
 
-    def _frame_to_batch(self):
+    def _draw_BB_rect(self, img, rect):
+        """
+        draw bounding box in the BB initialization window, and record current rect (x, y, w, h)
+        """
+        x, y, w, h = rect
+        offset_w = int(0.4/2 * self.W)
+        offset_h = int(0.2/2 * self.H)
+        pt1 = (np.max([x - offset_w, 0]), np.max([y - offset_h, 0]))
+        pt2 = (np.min([x + w + offset_w, self.W]), np.min([y + h + offset_h, self.H]))
+        # print(pt1, pt2)
+        cv2.rectangle(img, pt1, pt2, (28, 76, 242), 4)
+        self.rect = [np.max([x - offset_w, 0]),  # x
+                     np.max([y - offset_h, 0]),  # y
+                     np.min([x + w + offset_w, self.W]) - np.max([x - offset_w, 0]),  # w
+                     np.min([y + h + offset_h, self.H]) - np.max([y - offset_h, 0])]  # h
+
+    def _create_input_batch(self):
         """
         create multi-scale input batch
         input image range: [0, 255) --> [-0.4, 0.6)
         """
         self.input_batch = []
         for scale in self.scales:
-            img = utils.img_scale_padding(self.frame_square, scale)
+            img = utils.img_scale_padding(self.frame_square, scale) if scale < 1 else self.frame_square
             self.input_batch.append(img)
 
         self.input_batch = np.asarray(self.input_batch, dtype=np.float32) / 255 - 0.4
 
-    def _draw_rect(self, img, rect):
-        x, y, w, h = rect
-        offset = 70
-        cv2.rectangle(img, (np.max([x - offset, 0]), y), (np.min([x + w + offset, self.W]), y + h), (32, 105, 221), 4)
-        self.rect = [np.max([x - offset, 0]), y, np.min([x + w + offset, self.W]) - np.max([x - offset, 0]), h]
-
-    def _run_benchmark(self):
+    def _run_net(self):
         # inference
         hm, xm, ym, zm = self.sess.run([self.heatmap, self.x_heatmap, self.y_heatmap, self.z_heatmap],
                                        {self.input_crops: self.input_batch})
@@ -131,12 +155,12 @@ class VnectEstimator:
         ym_avg /= len(self.scales)
         zm_avg /= len(self.scales)
 
-        self.joints_2d = utils.extract_2d_joints_from_heatmap(hm_avg, self.box_size)
+        self.joints_2d = utils.extract_2d_joints_from_heatmap(hm_avg, self.box_size, self.hm_factor)
         self.joints_3d = utils.extract_3d_joints_from_heatmap(self.joints_2d, xm_avg, ym_avg, zm_avg, self.box_size,
                                                               self.hm_factor)
         # print(self.joints_2d)
 
-    def _joints_filter(self):
+    def _joint_coord_filter(self):
         if np.any(self.joints_2d_prior):
             for i in range(self.joints_num):
                 if self.joints_filter_threshold < np.sqrt(np.sum((self.joints_2d[i, :]-self.joints_2d_prior[i, :])**2)):
@@ -163,63 +187,71 @@ class VnectEstimator:
         self.ax_3d.w_xaxis.line.set_color(white)
         self.ax_3d.w_yaxis.line.set_color(white)
         self.ax_3d.w_zaxis.line.set_color(white)
-        utils.draw_limbs_3d(self.ax_3d, self.joints_3d, self.limb_parents)
+        utils.draw_limbs_3d(self.ax_3d, self.joints_3d, self.joint_parents)
 
-        # plt.pause(0.00001)  # this line is unnecessary under matplotlib 3.0.0, but ought to be activated
-                              # under matplotlib 3.0.2 (other versions not tested)
+        # this line is unnecessary with matplotlib 3.0.0, but ought to be activated
+        # under matplotlib 3.0.2 (other versions not tested)
+        # plt.pause(0.00001)
 
     def run(self):
-        start = False
-        success, frame_raw = self.cameraCapture.read()
+        # initial BB by HOG detection
+        self.BB_init()
+        success, frame = self.cameraCapture.read(); frame = frame.T if self.T else frame
+        while success and cv2.waitKey(1) == -1:
+            found, w = self.hog.detectMultiScale(frame)
+            if len(found) > 0:
+                self._draw_BB_rect(frame, found[np.argmax(w)])
+            scale = 400 / self.H
+            frame = cv2.resize(frame, (0, 0), fx=scale, fy=scale)
+            cv2.imshow(self._box_init_window_name, frame)
+
+            if self._clicked:
+                self._clicked = False
+                cv2.destroyWindow(self._box_init_window_name)
+                break
+
+            success, frame = self.cameraCapture.read(); frame = frame.T if self.T else frame
+
+        x, y, w, h = self.rect
+        plt.show()
+
+        # main loop
+        success, frame = self.cameraCapture.read(); frame = frame.T if self.T else frame
         while success and cv2.waitKey(1) == -1:
             t = time.time()
-            frame = frame_raw.copy()
 
-            if self._first_frame and self._clicked:
-                self._first_frame = False
-                self._clicked = False
-                start = True
-                cv2.destroyWindow(self._box_init_window)
-                plt.show()
-                x, y, w, h = self.rect
-                continue
-
-            if not start:
-                found, w = self.hog.detectMultiScale(frame)
-                if len(found) > 0:
-                    self._draw_rect(frame, found[np.argmax(w)])
-                scale = 400 / self.H
-                frame = cv2.resize(frame, (0, 0), fx=scale, fy=scale)
-                cv2.imshow(self._box_init_window, frame)
-                success, frame_raw = self.cameraCapture.read()
-                continue
-
+            # crop bounding box from the raw frame
             frame_cropped = frame[y:y+h, x:x+w, :]
-            self.frame_square = utils.read_square_image(frame_cropped, self.box_size)
-            self._frame_to_batch()  # generate input batch
-            self._run_benchmark()  # generate 2d and 3d joint coordinates
-            self._joints_filter()  # smooth the joint coordinate results
-            self.frame_square = utils.draw_limbs_2d(self.frame_square, self.joints_2d, self.limb_parents)
-            cv2.imshow('2D results', self.frame_square)
+            # crop --> one sqrare input img for CNN
+            self.frame_square = utils.img_scale_squareify(frame_cropped, self.box_size)
+            # one sqrare input img --> a batch of sqrare input imgs
+            self._create_input_batch()
+            # sqrare input img batch --CNN net--> 2d and 3d skeleton joint coordinates
+            self._run_net()
+            # filter to smooth the joint coordinate results
+            self._joint_coord_filter()
+
+            ## plot ##
+            # 2d plotting
+            self.frame_square = utils.draw_limbs_2d(self.frame_square, self.joints_2d, self.joint_parents)
+            cv2.imshow('2D Prediction', self.frame_square)
+            # 3d plotting
             self._imshow_3d()
 
             print('FPS: {:>2.2f}'.format(1 / (time.time() - t)))
-            success, frame_raw = self.cameraCapture.read()
+            success, frame = self.cameraCapture.read(); frame = frame.T if self.T else frame
 
         self._exit()
 
     def _exit(self):
         try:
             self.cameraCapture.release()
-            # self.videoWriter1.release()
-            # self.videoWriter2.release()
             cv2.destroyAllWindows()
-            # self.position.close()
         except Exception as e:
             print(e)
             raise
 
 
 if __name__ == '__main__':
-    estimator = VnectEstimator('./test_src/test_video.mp4')
+    estimator = VnectEstimator('./test_src/action5.mp4')
     estimator.run()
