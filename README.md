@@ -38,8 +38,7 @@ For the caffe model: please contact the author of the paper.
 
 1. Optimize the structure of the codes.
 2. Implement a better bounding box strategy.
-3. Add a coordinate filter to smooth the results.
-4. Figure out the reason why **matplotlib 3.0.2** is likely to be stuck.
+3. Figure out the reason why **matplotlib 3.0.2** is likely to be stuck.
 
 ## Reference Repositories
 
