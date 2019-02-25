@@ -9,14 +9,15 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import utils
+from OneEuroFilter import OneEuroFilter
 
 
 class VnectEstimator:
-    def __init__(self, video=0, T=False):
+    def __init__(self, video=None, T=False):
         print('Initializing...')
 
         # the input camera serial number of the PC (int), or PATH to input video (str)
-        self.video = video
+        self.video = 0 if not video else video
         # whether apply transposed matrix
         self.T = T
 
@@ -35,6 +36,23 @@ class VnectEstimator:
         self.joints_filter_threshold = 100
         # filter param
         self.joints_filter_m = 0.8
+
+        ## one euro filter ##
+        config_2d = {
+            'freq': 12,
+            'mincutoff': 1.7,
+            'beta': 0.3,
+            'dcutoff': 1.0
+        }
+        config_3d = {
+            'freq': 12,
+            'mincutoff': 0.8,
+            'beta': 0.4,
+            'dcutoff': 1.0
+        }
+        self.filter_2d = [(OneEuroFilter(**config_2d), OneEuroFilter(**config_2d)) for i in range(self.joints_num)]
+        self.filter_3d = [(OneEuroFilter(**config_3d), OneEuroFilter(**config_3d), OneEuroFilter(**config_3d))
+                          for i in range(self.joints_num)]
 
         ## flags ##
         # flag for determining whether the left mouse button is clicked
@@ -58,16 +76,12 @@ class VnectEstimator:
 
         # init the joint coord placeholders
         self.joints_2d = np.zeros((self.joints_num, 2), dtype=np.int32)
-        self.joints_2d_prior = np.zeros((self.joints_num, 2), dtype=np.int32)
         self.joints_3d = np.zeros((self.joints_num, 3), dtype=np.float32)
-        self.joints_3d_prior = np.zeros((self.joints_num, 3), dtype=np.float32)
 
         # catch the video stream
-        try:
-            self.cameraCapture = cv2.VideoCapture(video)
-        except Exception as e:
-            print(e)
-            raise
+        self.cameraCapture = cv2.VideoCapture(self.video)
+        if not self.cameraCapture.isOpened():
+            raise Exception('video stream not opened: %s' % self.video)
 
         # frame width and height
         self.W = int(self.cameraCapture.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -158,19 +172,16 @@ class VnectEstimator:
         self.joints_2d = utils.extract_2d_joints_from_heatmap(hm_avg, self.box_size, self.hm_factor)
         self.joints_3d = utils.extract_3d_joints_from_heatmap(self.joints_2d, xm_avg, ym_avg, zm_avg, self.box_size,
                                                               self.hm_factor)
-        # print(self.joints_2d)
+        # print(self.joints_2d, '\n', self.joints_3d)
 
     def _joint_coord_filter(self):
-        if np.any(self.joints_2d_prior):
-            for i in range(self.joints_num):
-                if self.joints_filter_threshold < np.sqrt(np.sum((self.joints_2d[i, :]-self.joints_2d_prior[i, :])**2)):
-                    self.joints_2d[i, :] = self.joints_filter_m * self.joints_2d_prior[i, :] + (
-                            1-self.joints_filter_m) * self.joints_2d[i, :]
-                    self.joints_3d[i, :] = self.joints_filter_m * self.joints_3d_prior[i, :] + (
-                            1-self.joints_filter_m) * self.joints_3d[i, :]
+        for i in range(self.joints_num):
+            self.joints_2d[i, 0] = self.filter_2d[i][0](self.joints_2d[i, 0], time.time())
+            self.joints_2d[i, 1] = self.filter_2d[i][1](self.joints_2d[i, 1], time.time())
 
-        self.joints_2d_prior = self.joints_2d
-        self.joints_3d_prior = self.joints_3d
+            self.joints_3d[i, 0] = self.filter_3d[i][0](self.joints_3d[i, 0], time.time())
+            self.joints_3d[i, 1] = self.filter_3d[i][1](self.joints_3d[i, 1], time.time())
+            self.joints_3d[i, 2] = self.filter_3d[i][2](self.joints_3d[i, 2], time.time())
 
     def _imshow_3d(self):
         self.ax_3d.clear()
