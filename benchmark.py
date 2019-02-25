@@ -183,6 +183,8 @@ class VnectEstimator:
             self.joints_3d[i, 1] = self.filter_3d[i][1](self.joints_3d[i, 1], time.time())
             self.joints_3d[i, 2] = self.filter_3d[i][2](self.joints_3d[i, 2], time.time())
 
+            # TODO: 监控并剔除跳变点
+
     def _imshow_3d(self):
         self.ax_3d.clear()
         self.ax_3d.view_init(-90, -90)
@@ -264,5 +266,5 @@ class VnectEstimator:
 
 
 if __name__ == '__main__':
-    estimator = VnectEstimator('./test_src/action5.mp4')
+    estimator = VnectEstimator('./test_src/test_video.mp4')
     estimator.run()

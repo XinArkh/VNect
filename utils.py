@@ -126,7 +126,7 @@ def draw_limbs_2d(img, joints_2d, limb_parents):
         length = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
         deg = math.degrees(math.atan2(x1 - x2, y1 - y2))
         polygon = cv2.ellipse2Poly((int((y1 + y2) / 2), int((x1 + x2) / 2)), (int(length / 2), 3), int(deg), 0, 360, 1)
-        img = cv2.fillConvexPoly(img, polygon, color=(14, 127, 255))
+        img = cv2.fillConvexPoly(img, polygon, color=(38, 73, 170))
     return img
 
 

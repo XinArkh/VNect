@@ -26,12 +26,12 @@ with tf.Session() as sess:
     z_heatmap = graph.get_tensor_by_name('split_2:3')
 
     img = cv2.imread('./test_src/test_pic.jpg')
-    img_square = utils.read_square_image(img, box_size)
+    img_square = utils.img_scale_squareify(img, box_size)
     img_square = img_square[np.newaxis, ...]
 
     hm, xm, ym, zm = sess.run([heatmap, x_heatmap, y_heatmap, z_heatmap], {input_batch: img_square/255-0.4})
 
-    joints_2d = utils.extract_2d_joints_from_heatmap(hm[0, ...], box_size)
+    joints_2d = utils.extract_2d_joints_from_heatmap(hm[0, ...], box_size, hm_factor)
 
     for i in range(21):
         if i == 0:
