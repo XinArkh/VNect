@@ -40,8 +40,15 @@ For the **caffe model** required in the repository: please contact [the author o
     <img src="./pic/joint_index.png" height="300">
 </p>
 
-3. Every input image is assumed to contain 21 joints to be found, which means it is easy to fit wrong results when a joint is actually not in the input.
-4. The results of the model in this implementation are not as good as the results shown in the video provided by the paper author, especially when predicting unusual postures (e.g. sitting on the ground).
+3. The joint positions (index numbers as above):
+
+<p align="center">
+    <img src="./pic/joint_pos.jpg" height="300">
+</p>
+
+
+4. Every input image is assumed to contain 21 joints to be found, which means it is easy to fit wrong results when a joint is actually not in the input.
+5. The results of the model in this implementation are not as good as the results shown in the video provided by the paper author, especially when predicting unusual postures (e.g. sitting on the ground).
 
 ## TODO
 
