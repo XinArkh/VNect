@@ -32,10 +32,6 @@ class VnectEstimator:
         self.scales = [1]  # or [1, 0.7] to be consistent with the author
         # parent joint indexes of each joint (for plotting the skeleton lines)
         self.joint_parents = [16, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
-        # filter param
-        self.joints_filter_threshold = 100
-        # filter param
-        self.joints_filter_m = 0.8
 
         ## one euro filter ##
         config_2d = {
