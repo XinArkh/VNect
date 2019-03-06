@@ -25,7 +25,7 @@ with tf.Session() as sess:
     y_heatmap = graph.get_tensor_by_name('split_2:2')
     z_heatmap = graph.get_tensor_by_name('split_2:3')
 
-    img = cv2.imread('./test_src/test_pic.jpg')
+    img = cv2.imread('./pic/test_pic.jpg')
     img_square = utils.img_scale_squareify(img, box_size)
     img_square = img_square[np.newaxis, ...]
 

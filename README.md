@@ -1,14 +1,17 @@
 # VNect
 
-An tensorflow implementation of [VNect: Real-time 3D Human Pose Estimation with a Single RGB Camera](http://gvv.mpi-inf.mpg.de/projects/VNect/).
+A tensorflow implementation of [VNect: Real-time 3D Human Pose Estimation with a Single RGB Camera](http://gvv.mpi-inf.mpg.de/projects/VNect/).
 
 <p align="center">
-    <img src="./test_src/test_pic_show.png">
+    <img src="./pic/test_pic_show.png" height="300">
 </p>
 <p align="center">
-    <img src="./test_src/test_video_show.gif">
+    <img src="./pic/test_video_show.gif" height="300">
 </p>
-For the caffe model: please contact the author of the paper.
+
+
+
+For the **caffe model** required in the repository: please contact [the author of the paper](http://gvv.mpi-inf.mpg.de/projects/VNect/).
 
 ## Environments
 
@@ -30,9 +33,15 @@ For the caffe model: please contact the author of the paper.
 
 ## Notes
 
-1. The input image is in BGR color format and is regulated into a range of [-0.4, 0.6).
-2. Every input image is assumed to contain 21 joints to be found, which means it is easy to fit wrong results when a joint is actually not in the input.
-3. The results of the model in this implementation are not as good as the results shown in the video provided by the paper author, especially when predicting unusual postures (e.g. sitting on the ground).
+1. The input image is in **BGR** color format and is regulated into a range of [-0.4, 0.6).
+2. The joint-parent map (can also see in `joint_index.xlsx`):
+
+<p align="center">
+    <img src="./pic/joint_index.png" height="300">
+</p>
+
+3. Every input image is assumed to contain 21 joints to be found, which means it is easy to fit wrong results when a joint is actually not in the input.
+4. The results of the model in this implementation are not as good as the results shown in the video provided by the paper author, especially when predicting unusual postures (e.g. sitting on the ground).
 
 ## TODO
 

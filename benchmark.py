@@ -262,5 +262,5 @@ class VnectEstimator:
 
 
 if __name__ == '__main__':
-    estimator = VnectEstimator('./test_src/test_video.mp4')
+    estimator = VnectEstimator('./pic/test_video.mp4')
     estimator.run()
