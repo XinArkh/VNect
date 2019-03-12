@@ -2,17 +2,14 @@
 
 A tensorflow implementation of [VNect: Real-time 3D Human Pose Estimation with a Single RGB Camera](http://gvv.mpi-inf.mpg.de/projects/VNect/).
 
+For the **caffe model** required in the repository: please contact [the author of the paper](http://gvv.mpi-inf.mpg.de/projects/VNect/).
+
 <p align="center">
     <img src="./pic/test_pic_show.png" height="300">
 </p>
 <p align="center">
     <img src="./pic/test_video_show.gif" height="300">
 </p>
-
-
-
-For the **caffe model** required in the repository: please contact [the author of the paper](http://gvv.mpi-inf.mpg.de/projects/VNect/).
-
 ## Environments
 
 - Windows 10 Pro
@@ -48,7 +45,7 @@ For the **caffe model** required in the repository: please contact [the author o
 
 
 4. Every input image is assumed to contain 21 joints to be found, which means it is easy to fit wrong results when a joint is actually not in the input.
-5. The results of the model in this implementation are not as good as the results shown in the video provided by the paper author, especially when predicting unusual postures (e.g. sitting on the ground).
+5. The results of the model in this implementation are **not as good** as the results shown in the video provided by the paper author, especially when predicting unusual postures (e.g. sitting on the ground).
 
 ## TODO
 
