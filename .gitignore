@@ -1,5 +1,7 @@
-/models/caffe_model/*.pkl
-/models/caffe_model/*.caffemodel
-/models/caffe_model/*.prototxt
-/models/tf_model/checkpoint
-/models/tf_model/vnect_tf.*
+# ignore caffe model
+/models/caffe_model/*
+!/models/caffe_model/readme.txt
+
+# ignore tensorflow model
+/models/caffe_model/*
+!/models/tf_model/readme.txt
