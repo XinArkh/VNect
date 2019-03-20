@@ -1,0 +1,5 @@
+/models/caffe_model/*.pkl
+/models/caffe_model/*.caffemodel
+/models/caffe_model/*.prototxt
+/models/tf_model/checkpoint
+/models/tf_model/vnect_tf.*
