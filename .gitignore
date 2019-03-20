@@ -3,5 +3,5 @@
 !/models/caffe_model/readme.txt
 
 # ignore tensorflow model
-/models/caffe_model/*
+/models/tf_model/*
 !/models/tf_model/readme.txt
