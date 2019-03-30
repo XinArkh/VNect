@@ -68,7 +68,7 @@ For the **caffe model** required in the repository: please contact [the author o
 
 ## About Training Data
 
-Referring to [MPI-INF-3DHP Dataset](https://github.com/XinArkh/mpi_inf_3dhp)
+Refer to [MPI-INF-3DHP Dataset](https://github.com/XinArkh/mpi_inf_3dhp)
 
 
 
