@@ -1,0 +1,25 @@
+Copyright (c) 2017 MPI for Informatics
+
+Permission is hereby granted, free of charge, to any person or company obtaining a copy of this software, dataset and associated documentation files (the "Software") 
+from the copyright holders to use the Software for any non-commercial purpose. Methods and models that make use of the provided Software in any way can only be used for 
+non-commercial purposes. Publication, redistribution and (re)selling of the software, of modifications, extensions, and derivatives of it, and of other software 
+containing portions of the licensed Software, are not permitted. The Copyright holder is permitted to publically disclose and advertise the use of the software by any licensee. 
+The above is subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software, 
+as well as any software including substantial portions of the software.
+
+If the software is used, the licensee is required to cite the use of the following publications in any documentation 
+or publication that results from the work:
+[1] VNect: Real-time 3D Human Pose Estimation With A Single RGB Camera (ACM Trans. on Graphics, SIGGRAPH ‘17)
+Mehta, D.; Sridhar, S.; Sotnycheno, O.; Rhodin, H.; Shafiei, M.; Seidel, H.; Xu, W.; Casas, D.; Theobalt, C.
+[2] Monocular 3D Human Pose Estimation In The Wild Using Improved CNN Supervision (3DV 2017)
+Mehta, D.; Rhodin, H.; Casas, D.; Fua, P.; Sotnychenko, O.; Xu, W.; Theobalt, C.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
