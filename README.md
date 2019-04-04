@@ -39,7 +39,7 @@ For the **caffe model** required in the repository: please contact [the author o
 ## Notes
 
 1. The input image is in **BGR** color format and is regulated into a range of [-0.4, 0.6).
-2. The joint-parent map (can also see in `joint_index.xlsx`):
+2. The joint-parent map (detailed information in `joint_index.xlsx`):
 
 <p align="center">
     <img src="./pic/joint_index.png" height="300">
