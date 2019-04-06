@@ -26,13 +26,13 @@ For the **caffe model** required in the repository: please contact [the author o
 
 ## Usage
 
-#### Preparation
+### Preparation
 
 1. Drop the caffe model into `models/caffe_model`.
 2. Run `caffe2pkl.py` to transfer the caffe model (and weights) to pickle format.
 3. Run `vnect_model.py` to generate tensorflow model (graph and weights).
 
-#### Application
+### Application
 
 1. Run `benchmark.py` or `estimator_example.py` to see **how the codes work with video stream**: 
 
