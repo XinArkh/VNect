@@ -12,7 +12,7 @@ import utils
 from OneEuroFilter import OneEuroFilter
 
 
-class VnectEstimator:
+class VNectEstimator:
     def __init__(self, video=None, T=False):
         print('Initializing...')
 
@@ -259,6 +259,6 @@ class VnectEstimator:
 
 
 if __name__ == '__main__':
-    estimator = VnectEstimator('./pic/test_video.mp4')
+    estimator = VNectEstimator('./pic/test_video.mp4')
 	# estimator = VnectEstimator(0)
     estimator.run()

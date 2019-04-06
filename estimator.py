@@ -226,4 +226,5 @@ def extract_3d_joints_from_heatmap(joints_2d, x_hm, y_hm, z_hm, box_size, hm_fac
 
 if __name__ == '__main__':
     estimator = VNectEstimator()
-    estimator('some pic')
+    joints_2d, joints_3d = estimator('some pic')
+    print(joints_2d, '\n', joints_3d)
