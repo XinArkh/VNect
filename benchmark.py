@@ -46,9 +46,9 @@ class VnectEstimator:
             'beta': 0.4,
             'dcutoff': 1.0
         }
-        self.filter_2d = [(OneEuroFilter(**config_2d), OneEuroFilter(**config_2d)) for i in range(self.joints_num)]
+        self.filter_2d = [(OneEuroFilter(**config_2d), OneEuroFilter(**config_2d)) for _ in range(self.joints_num)]
         self.filter_3d = [(OneEuroFilter(**config_3d), OneEuroFilter(**config_3d), OneEuroFilter(**config_3d))
-                          for i in range(self.joints_num)]
+                          for _ in range(self.joints_num)]
 
         ## flags ##
         # flag for determining whether the left mouse button is clicked
@@ -58,6 +58,8 @@ class VnectEstimator:
         self.rect = None
         self.frame_square = None
         self.input_batch = None
+        self.joints_2d = None
+        self.joints_3d = None
 
         # VNect model
         self.sess = tf.Session()
@@ -70,14 +72,9 @@ class VnectEstimator:
         self.y_heatmap = graph.get_tensor_by_name('split_2:2')
         self.z_heatmap = graph.get_tensor_by_name('split_2:3')
 
-        # init the joint coord placeholders
-        self.joints_2d = np.zeros((self.joints_num, 2), dtype=np.int32)
-        self.joints_3d = np.zeros((self.joints_num, 3), dtype=np.float32)
-
         # catch the video stream
         self.cameraCapture = cv2.VideoCapture(self.video)
-        if not self.cameraCapture.isOpened():
-            raise Exception('video stream not opened: %s' % self.video)
+        assert self.cameraCapture.isOpened(), 'Video stream not opened: %s' % self.video
 
         # frame width and height
         self.W = int(self.cameraCapture.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -91,7 +88,7 @@ class VnectEstimator:
         plt.ion()
         self.ax_3d.clear()
 
-        print('Initializing done.')
+        print('Initialization done.')
 
     def BB_init(self):
         # use HOG method to initialize bounding box
@@ -198,7 +195,7 @@ class VnectEstimator:
         self.ax_3d.w_zaxis.line.set_color(white)
         utils.draw_limbs_3d(self.ax_3d, self.joints_3d, self.joint_parents)
 
-        # this line is unnecessary with matplotlib 3.0.0, but ought to be activated
+        # the following line is unnecessary with matplotlib 3.0.0, but ought to be activated
         # under matplotlib 3.0.2 (other versions not tested)
         # plt.pause(0.00001)
 
@@ -263,4 +260,5 @@ class VnectEstimator:
 
 if __name__ == '__main__':
     estimator = VnectEstimator('./pic/test_video.mp4')
+	# estimator = VnectEstimator(0)
     estimator.run()

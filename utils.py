@@ -81,7 +81,7 @@ def extract_2d_joints_from_heatmap(heatmap, box_size, hm_factor):
     assert heatmap.shape[0] == heatmap.shape[1]
     heatmap_scaled = img_scale(heatmap, hm_factor)
 
-    joints_2d = np.zeros((heatmap_scaled.shape[2], 2), dtype=np.int32)
+    joints_2d = np.zeros((heatmap_scaled.shape[2], 2), dtype=np.int16)
     for joint_num in range(heatmap_scaled.shape[2]):
         joint_coord = np.unravel_index(np.argmax(heatmap_scaled[:, :, joint_num]), (box_size, box_size))
         joints_2d[joint_num, :] = joint_coord
@@ -137,3 +137,23 @@ def draw_limbs_3d(ax, joints_3d, limb_parents):
         y_pair = [joints_3d[i, 1], joints_3d[limb_parents[i], 1]]
         z_pair = [joints_3d[i, 2], joints_3d[limb_parents[i], 2]]
         ax.plot(x_pair, y_pair, zs=z_pair, linewidth=3)
+
+
+def gen_heatmap(img_shape, center, sigma=3):
+    img_height, img_width = img_shape
+    heatmap = np.zeros((img_height, img_width), dtype=np.float32)
+    center_x, center_y = center
+    th = 4.6052
+    delta = math.sqrt(th * 2)
+    x0 = int(max(0, center_x - delta * sigma))
+    y0 = int(max(0, center_y - delta * sigma))
+    x1 = int(min(img_width, center_x + delta * sigma))
+    y1 = int(min(img_height, center_y + delta * sigma))
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            d = (x - center_x) ** 2 + (y - center_y) ** 2
+            exp = d / 2.0 / sigma / sigma
+            if exp > th:
+                continue
+            heatmap[y][x] = np.clip(heatmap[y][x], math.exp(-exp), 1.0)
+    return heatmap
