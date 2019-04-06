@@ -1,4 +1,4 @@
-/__pycache__
+/__pycache__/
 
 # ignore caffe model
 /models/caffe_model/*
