@@ -1,3 +1,5 @@
+/__pycache__
+
 # ignore caffe model
 /models/caffe_model/*
 !/models/caffe_model/readme.txt
