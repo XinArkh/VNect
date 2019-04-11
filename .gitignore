@@ -1,9 +1,10 @@
 /__pycache__/
+/.idea/
 
 # ignore caffe model
 /models/caffe_model/*
-!/models/caffe_model/readme.txt
+!/models/caffe_model/README.md
 
 # ignore tensorflow model
 /models/tf_model/*
-!/models/tf_model/readme.txt
+!/models/tf_model/README.md

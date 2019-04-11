@@ -1,1 +1,0 @@
-Run vnect_model.py to generate tensorflow model graph and weights here.
