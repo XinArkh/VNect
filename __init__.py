@@ -1,1 +1,1 @@
-from .src.estimator import VNectEstimator
+from src.estimator import VNectEstimator
