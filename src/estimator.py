@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 
+import os
 import cv2
 import time
 import math
@@ -42,8 +43,10 @@ class VNectEstimator:
                           for _ in range(self._joints_num)]
         # load pretrained VNect model
         self.sess = tf.Session()
-        saver = tf.train.import_meta_graph('./models/tf_model/vnect_tf.meta')
-        saver.restore(self.sess, tf.train.latest_checkpoint('./models/tf_model/'))
+        saver = tf.train.import_meta_graph('../models/tf_model/vnect_tf.meta' if os.getcwd().endswith('src') else
+                                           './models/tf_model/vnect_tf.meta')
+        saver.restore(self.sess, tf.train.latest_checkpoint('../models/tf_model/'if os.getcwd().endswith('src') else
+                                                            './models/tf_model/'))
         graph = tf.get_default_graph()
         self.input_crops = graph.get_tensor_by_name('Placeholder:0')
         self.heatmap = graph.get_tensor_by_name('split_2:0')
@@ -51,29 +54,6 @@ class VNectEstimator:
         self.y_heatmap = graph.get_tensor_by_name('split_2:2')
         self.z_heatmap = graph.get_tensor_by_name('split_2:3')
         print('Initialization done.')
-
-    @staticmethod
-    def _gen_input_batch(img_input, box_size, scales):
-        # any input image --> sqrared input image acceptable for the model
-        img_square = img_scale_squareify(img_input, box_size)
-        # generate multi-scale input batch
-        input_batch = []
-        for scale in scales:
-            img = img_scale_padding(img_square, scale) if scale < 1 else img_square
-            input_batch.append(img)
-        # input image range: [0, 255) --> [-0.4, 0.6)
-        input_batch = np.asarray(input_batch, dtype=np.float32) / 255 - 0.4
-        return input_batch
-
-    def _joint_filter(self, joints_2d, joints_3d):
-        for i in range(self._joints_num):
-            joints_2d[i, 0] = self.filter_2d[i][0](joints_2d[i, 0], time.time())
-            joints_2d[i, 1] = self.filter_2d[i][1](joints_2d[i, 1], time.time())
-
-            joints_3d[i, 0] = self.filter_3d[i][0](joints_3d[i, 0], time.time())
-            joints_3d[i, 1] = self.filter_3d[i][1](joints_3d[i, 1], time.time())
-            joints_3d[i, 2] = self.filter_3d[i][2](joints_3d[i, 2], time.time())
-        return joints_2d, joints_3d
 
     def __call__(self, img_input):
         t = time.time()
@@ -110,7 +90,33 @@ class VNectEstimator:
         joints_2d = extract_2d_joints_from_heatmap(hm_avg, self._box_size, self._hm_factor)
         joints_3d = extract_3d_joints_from_heatmap(joints_2d, xm_avg, ym_avg, zm_avg, self._box_size, self._hm_factor)
         joints_2d, joints_3d = self._joint_filter(joints_2d, joints_3d)
+        if self.T:
+            joints_2d = joints_2d[:, ::-1]
+            joints_3d = joints_3d[:, [1, 0, 2]]
         print('FPS: {:>2.2f}'.format(1 / (time.time() - t)))
+        return joints_2d, joints_3d
+
+    @staticmethod
+    def _gen_input_batch(img_input, box_size, scales):
+        # any input image --> sqrared input image acceptable for the model
+        img_square = img_scale_squareify(img_input, box_size)
+        # generate multi-scale input batch
+        input_batch = []
+        for scale in scales:
+            img = img_scale_padding(img_square, scale) if scale < 1 else img_square
+            input_batch.append(img)
+        # input image range: [0, 255) --> [-0.4, 0.6)
+        input_batch = np.asarray(input_batch, dtype=np.float32) / 255 - 0.4
+        return input_batch
+
+    def _joint_filter(self, joints_2d, joints_3d):
+        for i in range(self._joints_num):
+            joints_2d[i, 0] = self.filter_2d[i][0](joints_2d[i, 0], time.time())
+            joints_2d[i, 1] = self.filter_2d[i][1](joints_2d[i, 1], time.time())
+
+            joints_3d[i, 0] = self.filter_3d[i][0](joints_3d[i, 0], time.time())
+            joints_3d[i, 1] = self.filter_3d[i][1](joints_3d[i, 1], time.time())
+            joints_3d[i, 2] = self.filter_3d[i][2](joints_3d[i, 2], time.time())
         return joints_2d, joints_3d
 
 
@@ -226,5 +232,5 @@ def extract_3d_joints_from_heatmap(joints_2d, x_hm, y_hm, z_hm, box_size, hm_fac
 
 if __name__ == '__main__':
     estimator = VNectEstimator()
-    joints_2d, joints_3d = estimator('some pic')
-    print(joints_2d, '\n', joints_3d)
+    joints_2d, joints_3d = estimator(cv2.imread('../pic/test_pic.jpg'))
+    print('\njoints_2d\n', joints_2d, '\n\njoints_3d\n', joints_3d)

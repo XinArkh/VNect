@@ -8,8 +8,8 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-import utils
-from OneEuroFilter import OneEuroFilter
+from src import utils
+from src.OneEuroFilter import OneEuroFilter
 
 
 class VNectEstimator:
@@ -260,5 +260,5 @@ class VNectEstimator:
 
 if __name__ == '__main__':
     estimator = VNectEstimator('./pic/test_video.mp4')
-	# estimator = VnectEstimator(0)
+    # estimator = VnectEstimator(0)
     estimator.run()
