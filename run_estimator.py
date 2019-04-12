@@ -12,11 +12,13 @@ from src.estimator import VNectEstimator
 
 
 # the input camera serial number of the PC (int), or PATH to input video (str)
-video = './pic/test_video.mp4'
+# video = './pic/test_video.mp4'
+video = 0
 # the side length of the bounding box
 box_size = 368
 # whether apply transposed matrix (when camera is flipped)
-T = False
+# T = False
+T = True
 # parent joint indexes of each joint (for plotting the skeleton lines)
 joint_parents = [16, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
 
@@ -56,7 +58,7 @@ cameraCapture = cv2.VideoCapture(video)
 assert cameraCapture.isOpened(), 'Video stream not opened: %s' % str(video)
 
 # use HOG method to initialize bounding box
-hog = HOGBox()
+hog = HOGBox(T=T)
 
 success, frame = cameraCapture.read()
 rect = None

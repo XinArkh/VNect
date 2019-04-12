@@ -57,7 +57,7 @@ class VNectEstimator:
 
     def __call__(self, img_input):
         t = time.time()
-        img_input = img_input.T if self.T else img_input
+        img_input = np.transpose(img_input, axes=[1, 0, 2]).copy() if self.T else img_input
         img_batch = self._gen_input_batch(img_input, self._box_size, self.scales)
         # inference
         hm, xm, ym, zm = self.sess.run([self.heatmap, self.x_heatmap, self.y_heatmap, self.z_heatmap],
