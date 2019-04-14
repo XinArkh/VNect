@@ -16,7 +16,7 @@ def img_scale(img, scale):
     return cv2.resize(img, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4)
 
 
-def img_padding(img, box_size, offset, padNum=0):
+def img_padding(img, box_size, offset, pad_num=0):
     """
     pad the image in left and right sides averagely to fill the box size
 
@@ -26,8 +26,8 @@ def img_padding(img, box_size, offset, padNum=0):
     assert h == box_size, 'height of the image not equal to box size'
     assert w < box_size, 'width of the image not smaller than box size'
 
-    img_padded = np.ones((box_size, box_size, 3), dtype=np.uint8) * padNum
-    img_padded[:, box_size//2-math.ceil(img.shape[1]/2):box_size//2 + math.ceil(img.shape[1]/2)-offset, :] = img
+    img_padded = np.ones((box_size, box_size, 3), dtype=np.uint8) * pad_num
+    img_padded[:, box_size//2 - math.ceil(img.shape[1]/2): box_size//2 + math.ceil(img.shape[1]/2)-offset, :] = img
 
     return img_padded
 
@@ -42,18 +42,17 @@ def img_scale_squareify(img, box_size):
     h, w = img.shape[:2]
     scale = box_size / h
     img_scaled = img_scale(img, scale)
-
-    if img_scaled.shape[1] < box_size:
+    if img_scaled.shape[1] < box_size:  # h > w
         offset = img_scaled.shape[1] % 2
         img_cropped = img_padding(img_scaled, box_size, offset)
-    else:
-        img_cropped = img_scaled[:, img_scaled.shape[1]//2-box_size//2:img_scaled.shape[1]//2+box_size//2, :]
+    else:  # h <= w
+        img_cropped = img_scaled[:, img_scaled.shape[1]//2 - box_size//2: img_scaled.shape[1]//2 + box_size//2, :]
 
-    assert img_cropped.shape == (box_size, box_size, 3)
+    assert img_cropped.shape == (box_size, box_size, 3), 'cropped image shape invalid'
     return img_cropped
 
 
-def img_scale_padding(img, scale, padNum=0):
+def img_scale_padding(img, scale, pad_num=0):
     """
     scale and pad the image
 
@@ -67,7 +66,7 @@ def img_scale_padding(img, scale, padNum=0):
     pad_h_offset = (box_size - img_scaled.shape[0]) % 2
     pad_w_offset = (box_size - img_scaled.shape[1]) % 2
     img_scaled_padded = np.pad(img_scaled, ((pad_w, pad_w + pad_w_offset), (pad_h, pad_h + pad_h_offset), (0, 0)),
-                               mode='constant', constant_values=padNum)
+                               mode='constant', constant_values=pad_num)
 
     return img_scaled_padded
 

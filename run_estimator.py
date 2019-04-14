@@ -9,6 +9,7 @@ from mpl_toolkits import mplot3d
 from src import utils
 from src.hog_box import HOGBox
 from src.estimator import VNectEstimator
+from ros_talker import RosTalker
 
 
 # the input camera serial number of the PC (int), or PATH to input video (str)
@@ -31,6 +32,8 @@ def my_exit(cameraCapture):
         raise
 
 
+# initialize ros connection
+ros = RosTalker(host='10.13.106.70')
 # catch the video stream
 cameraCapture = cv2.VideoCapture(video)
 assert cameraCapture.isOpened(), 'Video stream not opened: %s' % str(video)
@@ -46,6 +49,12 @@ while success and cv2.waitKey(1) == -1:
         break
     success, frame = cameraCapture.read()
 
+
+def cal_angles(v1, v2):
+    cos_a = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+    return np.arccos(cos_a)
+
+
 x, y, w, h = rect
 # initialize VNect estimator
 estimator = VNectEstimator(T=T)
@@ -53,9 +62,9 @@ estimator = VNectEstimator(T=T)
 success, frame = cameraCapture.read()
 while success and cv2.waitKey(1) == -1:
     # crop bounding box from the raw frame
-    frame_cropped = frame[y:y+h, x:x+w, :]
+    frame_cropped = frame[y:y+h, x:x+w, :] if not T else frame[x:x+w, y:y+h, :]
     joints_2d, joints_3d = estimator(frame_cropped)
-    print(np.linalg.norm(joints_3d[4]-joints_3d[3]), np.linalg.norm(joints_3d[7]-joints_3d[6]))
+    ros(joints_3d)
     success, frame = cameraCapture.read()
 
 my_exit(cameraCapture)

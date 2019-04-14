@@ -164,6 +164,6 @@ class VNectEstimator:
 
 
 if __name__ == '__main__':
-    estimator = VNectEstimator()
+    estimator = VNectEstimator(plot=False)
     j_2d, j_3d = estimator(cv2.imread('../pic/test_pic.jpg'))
     print('\njoints_2d\n', j_2d, '\n\njoints_3d\n', j_3d)
