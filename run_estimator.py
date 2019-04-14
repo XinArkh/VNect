@@ -53,7 +53,7 @@ estimator = VNectEstimator(T=T)
 success, frame = cameraCapture.read()
 while success and cv2.waitKey(1) == -1:
     # crop bounding box from the raw frame
-    frame_cropped = frame[y:y+h, x:x+w, :]
+    frame_cropped = frame[y:y+h, x:x+w, :] if not T else frame[x:x+w, y:y+h, :]
     joints_2d, joints_3d = estimator(frame_cropped)
     print(np.linalg.norm(joints_3d[4]-joints_3d[3]), np.linalg.norm(joints_3d[7]-joints_3d[6]))
     success, frame = cameraCapture.read()
