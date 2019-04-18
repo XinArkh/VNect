@@ -49,7 +49,7 @@ class Mpi_Inf_3dhp:
         batch_x = np.zeros([batch_size, self.img_size, self.img_size, 3], dtype=np.uint8)
         ## init y(annotation)
         batch_y = np.zeros([batch_size, self.heatmap_size, self.heatmap_size, len(joints) * 4],
-                           dtype=np.float32) if heatmap else np.zeros([batch_size, 5, len(joints)], np.uint16)
+                           dtype=np.float32) if heatmap else np.zeros([batch_size, 5, len(joints)], np.float32)
         for i, fpath in zip(range(len(batch)), batch):
             # print(fpath)
             # load x
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     import time
     start = time.time()
     m = Mpi_Inf_3dhp(r'E:\Datasets\mpi_inf_3dhp')
-    imgs, heatmaps = m.load_data(4096)
+    imgs, heatmaps = m.load_data(2)
     print(time.time()-start)
     img = cv2.resize(imgs[0], (46, 46), interpolation=cv2.INTER_LANCZOS4)
     heatmap = cv2.cvtColor(heatmaps[0, ..., 0], cv2.COLOR_GRAY2BGR)

@@ -23,24 +23,26 @@ class VNectEstimator:
     # parent joint indexes of each joint (for plotting the skeleton lines)
     _joint_parents = [16, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
 
-    def __init__(self, plot=True, T=False):
+    def __init__(self, plot=True, T=False, mirror=False):
         print('Initializing VnectEstimator...')
         # whether plot 2d and 3d animation
         self.plot = plot
         # whether apply transposed matrix (when camera is flipped)
         self.T = T
+        # whether apply mirror image mode
+        self.mirror = mirror
         # the ratio factors to scale the input image crops, no more than 1.0
         self.scales = [1]  # or [1, 0.7] to be consistent with the author when training
         # initialize one euro filters for all the joints
         config_2d = {
             'freq': 120,
-            'mincutoff': 1.7,
+            'mincutoff': 0.5,
             'beta': 0.3,
             'dcutoff': 1.0
         }
         config_3d = {
             'freq': 120,
-            'mincutoff': 0.8,
+            'mincutoff': 0.1,
             'beta': 0.4,
             'dcutoff': 1.0
         }
@@ -70,6 +72,7 @@ class VNectEstimator:
     def __call__(self, img_input):
         t = time.time()
         img_input = np.transpose(img_input, axes=[1, 0, 2]).copy() if self.T else img_input
+        img_input = cv2.flip(img_input, 1) if self.mirror else img_input
         img_batch = self._gen_input_batch(img_input, self._box_size, self.scales)
         # inference
         hm, xm, ym, zm = self.sess.run([self.heatmap, self.x_heatmap, self.y_heatmap, self.z_heatmap],
@@ -116,6 +119,7 @@ class VNectEstimator:
             # 3d plotting
             self.imshow_3d(self.ax_3d, joints_3d, self._joint_parents)
 
+        # print('joints_3d[14]', joints_3d[14])
         return joints_2d, joints_3d
 
     @staticmethod
@@ -164,6 +168,20 @@ class VNectEstimator:
 
 
 if __name__ == '__main__':
-    estimator = VNectEstimator(plot=False)
+    estimator = VNectEstimator(plot=True)
     j_2d, j_3d = estimator(cv2.imread('../pic/test_pic.jpg'))
-    print('\njoints_2d\n', j_2d, '\n\njoints_3d\n', j_3d)
+    print('\njoints_2d\n')
+    for i, j in enumerate(j_2d):
+        print(i, j)
+    print('\njoints_3d\n')
+    for i, j in enumerate(j_3d):
+        print(i, j)
+
+    j_1 = j_3d[1]  # neck
+    j_9 = j_3d[9]  # knee_r
+    j_12 = j_3d[12]  # knee_l
+    j_knee = (j_9 + j_12) / 2
+    print(np.linalg.norm(j_1 - j_knee))
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
