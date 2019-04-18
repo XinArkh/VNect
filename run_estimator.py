@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
+import sys; sys.path.extend(['./src'])
 from src import utils
 from src.hog_box import HOGBox
 from src.estimator import VNectEstimator

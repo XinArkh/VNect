@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
+import sys; sys.path.extend(['./src'])
 from src import utils
 from src.OneEuroFilter import OneEuroFilter
 

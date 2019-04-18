@@ -1,4 +1,5 @@
 import os
+import sys; sys.path.extend(['./src', './init'])
 from init import *
 from src.vnect_model import VNect
 
