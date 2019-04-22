@@ -6,6 +6,7 @@ import time
 import roslibpy
 import numpy as np
 from OneEuroFilter import OneEuroFilter
+from Baxter2Yumi import Space
 
 
 def cal_angle(v1, v2):
@@ -26,10 +27,16 @@ def vector_norm(v):
 
 
 class RosTalker:
-    def __init__(self, host, port=9090):
+    def __init__(self, host, port=9090, yumi=False):
         self.host = host
         self.port = port
+        self.yumi = yumi
 
+        # yumi transfer
+        if self.yumi:
+            self.Trans = Space()
+
+        # filter
         config_filter = {
             'freq': 120,
             'mincutoff': 0.5,
@@ -38,6 +45,7 @@ class RosTalker:
         }
         self.filter_angles = [OneEuroFilter(**config_filter) for _ in range(4)]
 
+        # ros connection
         self.client = roslibpy.Ros(host=self.host, port=self.port)
         self.talker = roslibpy.Topic(self.client, '/chatter', 'std_msgs/Float64MultiArray')
         self.client.run()
@@ -52,6 +60,9 @@ class RosTalker:
         for i, a, f in zip(np.arange(len(angles)), angles, self.filter_angles):
             angles[i] = f(a, time.time())
         s0, s1, e0, e1 = angles
+        if self.yumi:
+            s0, s1, e0, e1 = self.Trans.mapping([s0, s1, e0, e1])
+
         print('%5.2f | %5.2f | %5.2f | %5.2f *' %(np.rad2deg(s0), np.rad2deg(s1), np.rad2deg(e0), np.rad2deg(e1)))
         self.talker.publish(roslibpy.Message({'layout': {'dim': [{'label': 'right_arm', 'size': 3, 'stride': 1}],
                                                          'data_offset': 0},
