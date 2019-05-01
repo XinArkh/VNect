@@ -99,7 +99,7 @@ def extract_3d_joints_from_heatmap(joints_2d, x_hm, y_hm, z_hm, box_size, hm_fac
     y direction: up --> down
     z direction: forawrd --> backward
     """
-    scaler = 100
+    scaler = 100  # scaler=100 -> mm unit; scaler=10 -> cm unit
     joints_3d = np.zeros((x_hm.shape[2], 3), dtype=np.float32)
 
     for joint_num in range(x_hm.shape[2]):

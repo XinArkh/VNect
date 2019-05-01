@@ -6,7 +6,7 @@ from numpy import sin, cos
 '''
 
 
-class Space():
+class Space:
     def __init__(self):
         self.pi = np.pi
         # arm
@@ -50,7 +50,7 @@ class Space():
         theta[1:3] = theta[1:3][::-1]
         theta = np.append(theta, [0, 0, 0, 0])
         position = self.TransMatArm(theta)[0:3, 3]
-        print(position)
+        # print(position)
         position = np.array([-position[0], position[1], -position[2]]) - self.carm
         for j in range(3):
             if position[j] >= 0:

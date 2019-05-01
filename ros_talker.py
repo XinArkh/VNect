@@ -60,14 +60,19 @@ class RosTalker:
         for i, a, f in zip(np.arange(len(angles)), angles, self.filter_angles):
             angles[i] = f(a, time.time())
         s0, s1, e0, e1 = angles
-        if self.yumi:
-            s0, s1, e0, e1 = self.Trans.mapping([s0, s1, e0, e1])
-
-        print('%5.2f | %5.2f | %5.2f | %5.2f *' %(np.rad2deg(s0), np.rad2deg(s1), np.rad2deg(e0), np.rad2deg(e1)))
-        self.talker.publish(roslibpy.Message({'layout': {'dim': [{'label': 'right_arm', 'size': 3, 'stride': 1}],
-                                                         'data_offset': 0},
-                                              'data': [s0.astype(np.float64), s1.astype(np.float64),
-                                                       e0.astype(np.float64), e1.astype(np.float64)]}))
+        if not self.yumi:
+            print('%5.2f | %5.2f | %5.2f | %5.2f *' %(np.rad2deg(s0), np.rad2deg(s1), np.rad2deg(e0), np.rad2deg(e1)))
+            self.talker.publish(roslibpy.Message({'layout': {'dim': [{'label': 'right_arm', 'size': 3, 'stride': 1}],
+                                                             'data_offset': 0},
+                                                  'data': [s0.astype(np.float64), s1.astype(np.float64),
+                                                           e0.astype(np.float64), e1.astype(np.float64)]}))
+        else:
+            x, y, z = self.Trans.mapping([s0, s1, e0, e1]) / 1000
+            print('%5.2f | %5.2f | %5.2f' % (x, y, z))
+            self.talker.publish(roslibpy.Message({'layout': {'dim': [{'label': 'right_arm', 'size': 3, 'stride': 1}],
+                                                             'data_offset': 0},
+                                                  'data': [x.astype(np.float64), y.astype(np.float64),
+                                                           z.astype(np.float64)]}))
         print('send message')
 
     @staticmethod
@@ -91,6 +96,6 @@ class RosTalker:
         s1 = np.pi / 2 - cal_angle(aux_v2, s_2_e)
         e0 = cal_angle(aux_v3, aux_v4)
         e1 = cal_angle(s_2_e, e_2_w)
-        print('%5.2f | %5.2f | %5.2f | %5.2f' %(np.rad2deg(s0), np.rad2deg(s1), np.rad2deg(e0), np.rad2deg(e1)))
+        print('%5.2f | %5.2f | %5.2f | %5.2f' % (np.rad2deg(s0), np.rad2deg(s1), np.rad2deg(e0), np.rad2deg(e1)))
 
         return s0, s1, e0, e1
