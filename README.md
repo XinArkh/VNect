@@ -31,7 +31,7 @@ For the **caffe model** required in the repository: please contact [the author o
 ### Preparation
 
 1. Drop the caffe model into `models/caffe_model`.
-2. Run `load_weights.py` to generate tensorflow model.
+2. Run `init_weights.py` to generate tensorflow model.
 
 ### Application
 
