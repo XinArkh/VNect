@@ -80,29 +80,23 @@ def load_params(net, tfstyle=True):
     return params
 
 
-def save_params(net, save_path, tfstyle=True):
+def save_params(net, save_path, pkl_name, tfstyle=True):
     print('converting the weights to pickle file...')
     params = load_params(net, tfstyle=tfstyle)
-    with open(os.path.join(save_path, 'params.pkl'), 'wb') as f:
+    with open(os.path.join(save_path, pkl_name), 'wb') as f:
         pickle.dump(params, f)
     print('done.')
 
 
-def caffe2pkl(bpath, prototxt, caffemodel, spath=None):
+def caffe2pkl(bpath, prototxt, caffemodel, pkl_name, spath=None):
     # configurations
     BASEPATH = bpath
     PROTOTXT = prototxt
     CAFFEMODEL = caffemodel
+    PKL_NAME = pkl_name
     SAVEPATH = BASEPATH if spath is None else spath
 
     net = load_net(os.path.join(BASEPATH, PROTOTXT), os.path.join(BASEPATH, CAFFEMODEL))
     # print_layer_info(net)
     print_param_info(net)
-    save_params(net, SAVEPATH, tfstyle=True)
-
-
-if __name__ == '__main__':
-    BASEPATH = 'PATH/TO/caffe_model'
-    PROTOTXT = 'vnect_net.prototxt'
-    CAFFEMODEL = 'vnect_model.caffemodel'
-    caffe2pkl(BASEPATH, PROTOTXT, CAFFEMODEL)
+    save_params(net, SAVEPATH, PKL_NAME, tfstyle=True)
