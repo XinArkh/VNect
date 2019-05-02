@@ -3,6 +3,8 @@
 
 
 import os
+import sys
+sys.path.extend([os.path.dirname(os.path.abspath(__file__))])
 import cv2
 import time
 import numpy as np

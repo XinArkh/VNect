@@ -6,8 +6,6 @@ Run this code to build and save tensorflow model with corresponding weight value
 
 
 import os
-import sys
-sys.path.extend([os.path.join(os.path.abspath(__file__), 'src')])
 import tensorflow as tf
 from src.caffe2pkl import caffe2pkl
 from src.vnect_model import VNect

@@ -5,7 +5,6 @@
 import cv2
 import numpy as np
 import tensorflow as tf
-import sys; sys.path.extend(['./src'])
 from src import utils
 
 

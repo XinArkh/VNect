@@ -8,7 +8,6 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-import sys; sys.path.extend(['./src'])
 from src import utils
 from src.OneEuroFilter import OneEuroFilter
 
@@ -30,7 +29,7 @@ class VNectEstimator:
         # number of the joints to be detected
         self.joints_num = 21
         # the ratio factors to scale the input image crops, no more than 1.0
-        self.scales = [1]  # or [1, 0.7] to be consistent with the author
+        self.scales = [1]  # or [1, 0.7] to be consistent with the paper author
         # parent joint indexes of each joint (for plotting the skeleton lines)
         self.joint_parents = [16, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
 
