@@ -5,7 +5,7 @@
 import time
 import roslibpy
 import numpy as np
-from OneEuroFilter import OneEuroFilter
+from src.OneEuroFilter import OneEuroFilter
 from Baxter2Yumi import Space
 
 

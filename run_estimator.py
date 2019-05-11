@@ -6,22 +6,20 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-import sys; sys.path.extend(['./src'])
-from src import utils
 from src.hog_box import HOGBox
 from src.estimator import VNectEstimator
-from ros_talker import RosTalker
+
+import serial
 
 
 # the input camera serial number of the PC (int), or PATH to input video (str)
-# video = './pic/test_video.mp4'
 # video = 0
 video = './pic/angle.mp4'
 # the side length of the bounding box
 box_size = 368
 # whether apply transposed matrix (when camera is flipped)
-T = False
 # T = True
+T = False
 
 
 def my_exit(cameraCapture):
@@ -33,8 +31,8 @@ def my_exit(cameraCapture):
         raise
 
 
-# initialize ros connection
-ros = RosTalker(host='10.13.106.70', yumi=True)
+# initialize serial connection
+ser = serial.Serial('COM3', 9600, timeout=0)
 
 # catch the video stream
 cameraCapture = cv2.VideoCapture(video)
