@@ -21,9 +21,40 @@ For the **caffe model** required in the repository: please contact [the author o
   - opencv-python 3.4.4.19
   - tensorflow-gpu 1.12.0
   - [pycaffe](https://github.com/BVLC/caffe/tree/windows)
-  - matplotlib 3.0.0 （recommanded）
+  - matplotlib 3.0.0 （recommended）
   - ……
 
+## Setup
+<details><summary>Fedora 29</summary>
+<p>
+
+#### Install python dependencies:
+```
+pip3 install -r requirements.txt --user
+```
+#### Install caffe dependencies
+```
+sudo dnf install protobuf-devel leveldb-devel snappy-devel opencv-devel boost-devel hdf5-devel glog-devel gflags-devel lmdb-devel atlas-devel python-lxml boost-python3-devel
+```
+#### Setup Caffe
+```
+git clone https://github.com/BVLC/caffe.git
+cd caffe
+```
+
+#### Configure Makefile.config (Include python3 and fix path)
+
+#### Build Caffe
+```
+sudo make all
+sudo make runtest
+sudo make pycaffe
+sudo make distribute
+sudo cp .build_release/lib/ /usr/lib64
+sudo cp -a distribute/python/caffe/ /usr/lib/python3.7/site-packages/
+```
+</p>
+</details>
 
 
 ## Usage
@@ -31,7 +62,7 @@ For the **caffe model** required in the repository: please contact [the author o
 ### Preparation
 
 1. Drop the caffe model into `models/caffe_model`.
-2. Run `load_weights.py` to generate tensorflow model.
+2. Run `init_weights.py` to generate tensorflow model.
 
 ### Application
 

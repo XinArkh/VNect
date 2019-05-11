@@ -16,8 +16,10 @@ scales = [1.0, 0.7]
 limb_parents = [1, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
 
 with tf.Session() as sess:
-    saver = tf.train.import_meta_graph('./models/tf_model/vnect_tf.meta')
-    saver.restore(sess, tf.train.latest_checkpoint('./models/tf_model/'))
+    # saver = tf.train.import_meta_graph('./models/tf_model/vnect_tf.meta')
+    # saver.restore(sess, tf.train.latest_checkpoint('./models/tf_model/'))
+    saver = tf.train.import_meta_graph('./models/trained/vnect_tf-1.meta')
+    saver.restore(sess, tf.train.latest_checkpoint('./models/trained/'))
 
     graph = tf.get_default_graph()
     input_batch = graph.get_tensor_by_name('Placeholder:0')
@@ -25,6 +27,14 @@ with tf.Session() as sess:
     x_heatmap = graph.get_tensor_by_name('split_2:1')
     y_heatmap = graph.get_tensor_by_name('split_2:2')
     z_heatmap = graph.get_tensor_by_name('split_2:3')
+
+
+    # from src.vnect_model import VNect
+    # model = VNect()
+    # input_batch = model.input_holder
+    # heatmap = model.heatmap
+    # x_heatmap, y_heatmap, z_heatmap = model.x_heatmap, model.y_heatmap, model.z_heatmap
+    # sess.run(tf.global_variables_initializer())
 
     img = cv2.imread('./pic/test_pic.jpg')
     img_square = utils.img_scale_squareify(img, box_size)
@@ -51,10 +61,13 @@ with tf.Session() as sess:
             zimg = np.hstack([zimg, tmp])
 
     all_hm = np.vstack([himg, ximg, yimg, zimg])
-    cv2.imshow('all heatmaps', all_hm)
+    cv2.imshow('all heatmaps', all_hm*128)
 
     img_res2d = utils.draw_limbs_2d(img_square[0, ...], joints_2d, limb_parents)
     cv2.imshow('2D results', img_res2d)
 
     cv2.waitKey()
     cv2.destroyAllWindows()
+
+print(hm[0, :, :, 0])
+# np.savetxt('original', hm[0, :, :, 0])
