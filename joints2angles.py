@@ -20,7 +20,7 @@ def vector_norm(v):
     return np.linalg.norm(v)
 
 
-class j2a:
+class joints2angles:
     def __init__(self, filter=True):
         self.filter = filter
 
@@ -38,15 +38,14 @@ class j2a:
         angles = list(self.joints2angles(joints_3d))
 
         if self.filter:
-            for i, a, f in zip(np.arange(len(angles)), angles, self.filter_angles):
-                angles[i] = f(a, time.time())
-            s0, s1, e0, e1 = angles
-            print('%5.2f | %5.2f | %5.2f | %5.2f *' % (
-                np.rad2deg(s0), np.rad2deg(s1), np.rad2deg(e0), np.rad2deg(e1)))
+            for i, angle in enumerate(angles):
+                angles[i] = self.filter_angles[i](angle, time.time())
 
-            # [s0.astype(np.float64), s1.astype(np.float64), e0.astype(np.float64), e1.astype(np.float64)]
+        s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r = angles
+        print('%5.2f | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f' %
+              (s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r))
 
-            print('send message')
+        return angles
 
     @staticmethod
     def joints2angles(joints_3d):
@@ -80,7 +79,7 @@ class j2a:
 
         # calculate angles
         # left arm
-        s0_l = np.pi * 3/4 - cal_angle(aux_v1_l, aux_v3_l)
+        s0_l = np.pi * 3 / 4 - cal_angle(aux_v1_l, aux_v3_l)
         s1_l = np.pi / 2 - cal_angle(aux_v2, s_2_e_l)
         e0_l = -cal_angle(aux_v3_l, aux_v4_l)
         e1_l = cal_angle(s_2_e_l, e_2_w_l)
@@ -91,6 +90,5 @@ class j2a:
         e0_r = cal_angle(aux_v3_r, aux_v4_r)
         e1_r = cal_angle(s_2_e_r, e_2_w_r)
 
-        # print('%5.2f | %5.2f | %5.2f | %5.2f' % (np.rad2deg(s0), np.rad2deg(s1), np.rad2deg(e0), np.rad2deg(e1)))
-
-        return s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r
+        # return s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r
+        return np.rad2deg([s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r])

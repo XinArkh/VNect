@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
+from joints2angles import joints2angles
 from src.hog_box import HOGBox
 from src.estimator import VNectEstimator
 
@@ -34,6 +35,8 @@ def my_exit(cameraCapture):
 # initialize serial connection
 ser = serial.Serial('COM3', 9600, timeout=0)
 
+j2a = joints2angles()
+
 # catch the video stream
 cameraCapture = cv2.VideoCapture(video)
 assert cameraCapture.isOpened(), 'Video stream not opened: %s' % str(video)
@@ -49,12 +52,6 @@ while success and cv2.waitKey(1) == -1:
         break
     success, frame = cameraCapture.read()
 
-
-def cal_angles(v1, v2):
-    cos_a = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
-    return np.arccos(cos_a)
-
-
 x, y, w, h = rect
 # initialize VNect estimator
 estimator = VNectEstimator(T=T)
@@ -64,7 +61,9 @@ while success and cv2.waitKey(1) == -1:
     # crop bounding box from the raw frame
     frame_cropped = frame[y:y+h, x:x+w, :] if not T else frame[x:x+w, y:y+h, :]
     joints_2d, joints_3d = estimator(frame_cropped)
-    ros(joints_3d)
+    angles = j2a(joints_3d)
+    msg = '%d,%d,%d,%d,%d,%d,%d,%d' % angles
+    ser.write(msg.encode())
     success, frame = cameraCapture.read()
 
 my_exit(cameraCapture)
