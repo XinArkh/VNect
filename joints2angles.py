@@ -45,6 +45,8 @@ class joints2angles:
         print('%5.2f | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f' %
               (s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r))
 
+        angles = [s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r]
+
         return angles
 
     @staticmethod
@@ -91,4 +93,4 @@ class joints2angles:
         e1_r = cal_angle(s_2_e_r, e_2_w_r)
 
         # return s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r
-        return np.rad2deg([s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r])
+        return np.round(np.rad2deg([s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r])).astype(np.int32)

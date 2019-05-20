@@ -14,8 +14,8 @@ import serial
 
 
 # the input camera serial number of the PC (int), or PATH to input video (str)
-# video = 0
-video = './pic/angle.mp4'
+video = 0
+# video = './pic/angle.mp4'
 # the side length of the bounding box
 box_size = 368
 # whether apply transposed matrix (when camera is flipped)
@@ -33,7 +33,7 @@ def my_exit(cameraCapture):
 
 
 # initialize serial connection
-ser = serial.Serial('COM3', 9600, timeout=0)
+# ser = serial.Serial('COM3', 9600, timeout=0)
 
 j2a = joints2angles()
 
@@ -62,8 +62,12 @@ while success and cv2.waitKey(1) == -1:
     frame_cropped = frame[y:y+h, x:x+w, :] if not T else frame[x:x+w, y:y+h, :]
     joints_2d, joints_3d = estimator(frame_cropped)
     angles = j2a(joints_3d)
-    msg = '%d,%d,%d,%d,%d,%d,%d,%d' % angles
-    ser.write(msg.encode())
+
+    # write to serial interface
+    # ser.write(b'ARM\r\n')
+    # for s in [str(a)+'\r\n' for a in angles]:
+    #     ser.write(s.encode())
+
     success, frame = cameraCapture.read()
 
 my_exit(cameraCapture)
