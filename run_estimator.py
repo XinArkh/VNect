@@ -43,7 +43,7 @@ assert cameraCapture.isOpened(), 'Video stream not opened: %s' % str(video)
 hog = HOGBox(T=T)
 
 success, frame = cameraCapture.read()
-rect = None
+rect = 0, 0, frame.shape[1], frame.shape[0]
 while success and cv2.waitKey(1) == -1:
     choose, rect = hog(frame)
     if choose:
@@ -59,8 +59,8 @@ while success and cv2.waitKey(1) == -1:
     frame_cropped = frame[y:y+h, x:x+w, :] if not T else frame[x:x+w, y:y+h, :]
     joints_2d, joints_3d = estimator(frame_cropped)
     angles = j2a(joints_3d)
-    # print(angles)
-    ros_talker(angles)
+    print(angles)
+    # ros_talker(angles)
     # write to serial interface
     # ser.write(b'ARM\r\n')
     # for s in [str(a)+'\r\n' for a in angles]:
