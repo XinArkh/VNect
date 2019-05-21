@@ -237,22 +237,5 @@ class VNect:
 
 
 if __name__ == '__main__':
-    """
-    Run this code to build tensorflow model and corresponding weight values for VNect
-    Require: 'params.pkl' which is generated in caffe_model_data.py
-    """
-    PARAMSFILE = './models/caffe_model/params.pkl'
-    SAVERPATH = './models/tf_model'
-
-    if tf.gfile.Exists(SAVERPATH):
-        tf.gfile.DeleteRecursively(SAVERPATH)
-    tf.gfile.MakeDirs(SAVERPATH)
-
-    if not SAVERPATH.endswith('/'):
-        SAVERPATH += '/'
-
     model = VNect()
-    with tf.Session() as sess:
-        saver = tf.train.Saver()
-        model.load_weights(sess, PARAMSFILE)
-        saver.save(sess, SAVERPATH + 'vnect_tf')
+    print('VNect building successfully.')
