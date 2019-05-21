@@ -59,6 +59,7 @@ while success and cv2.waitKey(1) == -1:
     frame_cropped = frame[y:y+h, x:x+w, :] if not T else frame[x:x+w, y:y+h, :]
     joints_2d, joints_3d = estimator(frame_cropped)
     angles = j2a(joints_3d)
+    # print(angles)
     ros_talker(angles)
     # write to serial interface
     # ser.write(b'ARM\r\n')

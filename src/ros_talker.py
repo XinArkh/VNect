@@ -19,15 +19,6 @@ class RosTalker:
         if self.yumi:
             self.Trans = Space()
 
-        # filter
-        config_filter = {
-            'freq': 120,
-            'mincutoff': 0.5,
-            'beta': 0.3,
-            'dcutoff': 1.0
-        }
-        self.filter_angles = [OneEuroFilter(**config_filter) for _ in range(4)]
-
         # ros connection
         self.client = roslibpy.Ros(host=self.host, port=self.port)
         self.talker = roslibpy.Topic(self.client, '/chatter', 'std_msgs/Float64MultiArray')
