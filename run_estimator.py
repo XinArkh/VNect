@@ -3,15 +3,10 @@
 
 
 import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
-from joints2angles import joints2angles
 from src.hog_box import HOGBox
+from src.ros_talker import RosTalker
 from src.estimator import VNectEstimator
-from ros_talker import RosTalker
-import serial
-
+from src.joints2angles import joints2angles
 
 # the input camera serial number of the PC (int), or PATH to input video (str)
 # video = 0
@@ -31,11 +26,12 @@ def my_exit(cameraCapture):
 
 
 # initialize ros connection
-ros = RosTalker(host='10.13.106.70', yumi=True)
+ros_talker = RosTalker(host='10.13.106.70', yumi=True)
 
 # initialize serial connection
 # ser = serial.Serial('COM3', 9600, timeout=0)
 
+# initialize joints-to-angles calculation class
 j2a = joints2angles()
 
 # catch the video stream
@@ -62,7 +58,7 @@ while success and cv2.waitKey(1) == -1:
     frame_cropped = frame[y:y+h, x:x+w, :] if not T else frame[x:x+w, y:y+h, :]
     joints_2d, joints_3d = estimator(frame_cropped)
     angles = j2a(joints_3d)
-    ros(joints_3d)
+    ros_talker(angles)
     # write to serial interface
     # ser.write(b'ARM\r\n')
     # for s in [str(a)+'\r\n' for a in angles]:
