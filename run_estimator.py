@@ -14,8 +14,8 @@ import serial
 
 
 # the input camera serial number of the PC (int), or PATH to input video (str)
-video = 0
-# video = './pic/angle.mp4'
+# video = 0
+video = './pic/angle.mp4'
 # the side length of the bounding box
 box_size = 368
 # whether apply transposed matrix (when camera is flipped)

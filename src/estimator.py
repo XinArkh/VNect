@@ -38,14 +38,14 @@ class VNectEstimator:
         # initialize one euro filters for all the joints
         config_2d = {
             'freq': 120,
-            'mincutoff': 0.5,
-            'beta': 0.3,
+            'mincutoff': 0.1,
+            'beta': 0.1,
             'dcutoff': 1.0
         }
         config_3d = {
             'freq': 120,
-            'mincutoff': 0.1,
-            'beta': 0.4,
+            'mincutoff': 0.000005,
+            'beta': 0.005,
             'dcutoff': 1.0
         }
         self.filter_2d = [(OneEuroFilter(**config_2d), OneEuroFilter(**config_2d)) for _ in range(self._joints_num)]
