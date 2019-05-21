@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from src.OneEuroFilter import OneEuroFilter
+from OneEuroFilter import OneEuroFilter
 
 
 def cal_angle(v1, v2):

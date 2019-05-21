@@ -3,6 +3,7 @@
 
 
 import cv2
+import serial
 from src.hog_box import HOGBox
 from src.ros_talker import RosTalker
 from src.estimator import VNectEstimator
