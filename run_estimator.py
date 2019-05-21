@@ -6,19 +6,14 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
-import sys; sys.path.extend(['./src'])
-from src import utils
 from src.hog_box import HOGBox
 from src.estimator import VNectEstimator
 from ros_talker import RosTalker
 
 
 # the input camera serial number of the PC (int), or PATH to input video (str)
-# video = './pic/test_video.mp4'
 # video = 0
 video = './pic/angle.mp4'
-# the side length of the bounding box
-box_size = 368
 # whether apply transposed matrix (when camera is flipped)
 T = False
 # T = True
@@ -50,13 +45,6 @@ while success and cv2.waitKey(1) == -1:
     if choose:
         break
     success, frame = cameraCapture.read()
-
-
-def cal_angles(v1, v2):
-    cos_a = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
-    return np.arccos(cos_a)
-
-
 x, y, w, h = rect
 # initialize VNect estimator
 estimator = VNectEstimator(T=T)
