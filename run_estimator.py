@@ -11,14 +11,11 @@ from src.estimator import VNectEstimator
 
 
 # the input camera serial number of the PC (int), or PATH to input video (str)
-# video = './pic/test_video.mp4'
 video = 0
-# video = './pic/action5.mp4'
-# the side length of the bounding box
-box_size = 368
+# video = './pic/test_video.mp4'
 # whether apply transposed matrix (when camera is flipped)
-# T = False
-T = True
+T = False
+# T = True
 
 
 def my_exit(cameraCapture):
@@ -44,7 +41,6 @@ while success and cv2.waitKey(1) == -1:
     if choose:
         break
     success, frame = cameraCapture.read()
-
 x, y, w, h = rect
 # initialize VNect estimator
 estimator = VNectEstimator(T=T)
