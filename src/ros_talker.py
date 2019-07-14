@@ -2,10 +2,12 @@
 # -*- coding: UTF-8 -*-
 
 
+import os
+import sys
+sys.path.extend([os.path.dirname(os.path.abspath(__file__))])
 import time
 import roslibpy
 import numpy as np
-from OneEuroFilter import OneEuroFilter
 from Baxter2Yumi import Space
 
 
@@ -29,18 +31,20 @@ class RosTalker:
             count += 1
             assert count < 5, 'ros connection overtime'
 
-    def __call__(self, angles):
-        s0, s1, e0, e1 = angles[4:]
+    def send(self, angles):
+        s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r = angles
         if not self.yumi:
             self.talker.publish(roslibpy.Message({'layout': {'dim': [{'label': 'right_arm', 'size': 3, 'stride': 1}],
                                                              'data_offset': 0},
-                                                  'data': [s0.astype(np.float64), s1.astype(np.float64),
-                                                           e0.astype(np.float64), e1.astype(np.float64)]}))
+                                                  'data': [s0_l.astype(np.float64), s1_l.astype(np.float64),
+                                                           e0_l.astype(np.float64), e1_l.astype(np.float64),
+                                                           s0_r.astype(np.float64), s1_r.astype(np.float64),
+                                                           e0_r.astype(np.float64), e1_r.astype(np.float64)]}))
         else:
-            x, y, z = self.Trans.mapping([s0, s1, e0, e1]) / 1000
+            x, y, z = self.Trans.mapping([s0_r, s1_r, e0_r, e1_r]) / 1000
             print('%5.2f | %5.2f | %5.2f' % (x, y, z))
             self.talker.publish(roslibpy.Message({'layout': {'dim': [{'label': 'right_arm', 'size': 3, 'stride': 1}],
                                                              'data_offset': 0},
                                                   'data': [x.astype(np.float64), y.astype(np.float64),
                                                            z.astype(np.float64)]}))
-        print('sending message to ros master...')
+        print('Sending message to ros master...')

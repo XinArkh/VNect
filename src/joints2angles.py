@@ -20,8 +20,9 @@ def vector_norm(v):
     return np.linalg.norm(v)
 
 
-class joints2angles:
+class Joints2Angles:
     def __init__(self, filter=True):
+        print('Initializing Joints2Angles...')
         self.filter = filter
 
         if self.filter:
@@ -29,10 +30,11 @@ class joints2angles:
             config_filter = {
                 'freq': 120,
                 'mincutoff': 0.5,
-                'beta': 0.3,
+                'beta': 0.5,
                 'dcutoff': 1.0
             }
             self.filter_angles = [OneEuroFilter(**config_filter) for _ in range(8)]
+        print('Joints2Angles initialized.')
 
     def __call__(self, joints_3d):
         angles = list(self.joints2angles(joints_3d))
@@ -73,7 +75,8 @@ class joints2angles:
 
         aux_v1_l = shoulder_r - shoulder_l
         aux_v1_r = -aux_v1_l
-        aux_v2 = pelvis - head  # down direction
+        # aux_v2 = pelvis - head
+        aux_v2 = [0, 1, 0]  # down direction
         aux_v3_l = vector_cross_product(s_2_e_l, aux_v2)
         aux_v3_r = vector_cross_product(s_2_e_r, aux_v2)
         aux_v4_l = vector_cross_product(s_2_e_l, e_2_w_l)
@@ -92,5 +95,11 @@ class joints2angles:
         e0_r = cal_angle(aux_v3_r, aux_v4_r)
         e1_r = cal_angle(s_2_e_r, e_2_w_r)
 
-        # return s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r
-        return np.round(np.rad2deg([s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r])).astype(np.int32)
+        # 蛙人
+        s0_l = s0_l - np.pi / 4
+        e1_l = -e1_l
+        s0_r = s0_r + np.pi / 4
+        s1_r = -s1_r
+
+        # return s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r  # radian, float64
+        return np.round(np.rad2deg([s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r])).astype(np.int32)  # degree, int32

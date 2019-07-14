@@ -110,12 +110,14 @@ if __name__ == '__main__':
     imgs, heatmaps = m.load_data(10)
 
     cv2.imshow('1', imgs[0])
-    cv2.imshow('2', heatmaps[0, ..., 0])
+    # cv2.imshow('2', heatmaps[0, ..., 0])
+    cv2.imshow('2', cv2.resize(heatmaps[0, ..., 0], (368, 368), interpolation=cv2.INTER_LANCZOS4))
 
     print('loading time: %.3fs' % (time.time() - start))
     img = cv2.resize(imgs[0], (46, 46), interpolation=cv2.INTER_LANCZOS4)
     heatmap = cv2.cvtColor(heatmaps[0, ..., 0], cv2.COLOR_GRAY2BGR)
-    dst = img * 0.5 + heatmap * 255 * 0.5
+    # dst = img * 0.5 + heatmap * 255 * 0.5
+    dst = imgs[0] * 0.5 + cv2.resize(heatmap, (368, 368), interpolation=cv2.INTER_LANCZOS4) * 255 * 0.5
     cv2.imshow('a', dst.astype(np.uint8))
     # cv2.imshow('b', heatmaps[0, ..., 0])
     cv2.waitKey()

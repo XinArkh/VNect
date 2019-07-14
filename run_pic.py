@@ -5,7 +5,6 @@
 import cv2
 import numpy as np
 import tensorflow as tf
-import sys; sys.path.extend(['./src'])
 from src import utils
 
 
@@ -16,10 +15,10 @@ scales = [1.0, 0.7]
 limb_parents = [1, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
 
 with tf.Session() as sess:
-    # saver = tf.train.import_meta_graph('./models/tf_model/vnect_tf.meta')
-    # saver.restore(sess, tf.train.latest_checkpoint('./models/tf_model/'))
-    saver = tf.train.import_meta_graph('./models/trained/vnect_tf-1.meta')
-    saver.restore(sess, tf.train.latest_checkpoint('./models/trained/'))
+    saver = tf.train.import_meta_graph('./models/tf_model/vnect_tf.meta')
+    saver.restore(sess, tf.train.latest_checkpoint('./models/tf_model/'))
+    # saver = tf.train.import_meta_graph('./models/trained/vnect_tf-1.meta')
+    # saver.restore(sess, tf.train.latest_checkpoint('./models/trained/'))
 
     graph = tf.get_default_graph()
     input_batch = graph.get_tensor_by_name('Placeholder:0')
@@ -36,7 +35,7 @@ with tf.Session() as sess:
     # x_heatmap, y_heatmap, z_heatmap = model.x_heatmap, model.y_heatmap, model.z_heatmap
     # sess.run(tf.global_variables_initializer())
 
-    img = cv2.imread('./pic/test_pic.jpg')
+    img = cv2.imread('./pic/asd.png')
     img_square = utils.img_scale_squareify(img, box_size)
     img_square = img_square[np.newaxis, ...]
 

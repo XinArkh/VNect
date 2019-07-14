@@ -8,8 +8,6 @@ sys.path.extend([os.path.dirname(os.path.abspath(__file__))])
 import cv2
 import time
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
 import tensorflow as tf
 import utils
 from OneEuroFilter import OneEuroFilter
@@ -22,17 +20,11 @@ class VNectEstimator:
     _hm_factor = 8
     # number of the joints to be detected
     _joints_num = 21
-    # parent joint indexes of each joint (for plotting the skeleton lines)
+    # parent joint indexes of each joint (for plotting the skeletal lines)
     _joint_parents = [16, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
 
-    def __init__(self, plot=True, T=False, mirror=False):
-        print('Initializing VnectEstimator...')
-        # whether plot 2d and 3d animation
-        self.plot = plot
-        # whether apply transposed matrix (when camera is flipped)
-        self.T = T
-        # whether apply mirror image mode
-        self.mirror = mirror
+    def __init__(self):
+        print('Initializing VNectEstimator...')
         # the ratio factors to scale the input image crops, no more than 1.0
         self.scales = [1]  # or [1, 0.7] to be consistent with the author when training
         # initialize one euro filters for all the joints
@@ -44,8 +36,8 @@ class VNectEstimator:
         }
         config_3d = {
             'freq': 120,
-            'mincutoff': 0.000005,
-            'beta': 0.005,
+            'mincutoff': 0.1,
+            'beta': 0.1,
             'dcutoff': 1.0
         }
         self.filter_2d = [(OneEuroFilter(**config_2d), OneEuroFilter(**config_2d)) for _ in range(self._joints_num)]
@@ -63,18 +55,10 @@ class VNectEstimator:
         self.x_heatmap = graph.get_tensor_by_name('split_2:1')
         self.y_heatmap = graph.get_tensor_by_name('split_2:2')
         self.z_heatmap = graph.get_tensor_by_name('split_2:3')
-
-        if self.plot:
-            self.ax_3d = plt.axes(projection='3d')
-            plt.ion()
-            self.ax_3d.clear()
-            plt.show()
-        print('Initialization done.')
+        print('VNectEstimator initialized.')
 
     def __call__(self, img_input):
         t = time.time()
-        img_input = np.transpose(img_input, axes=[1, 0, 2]).copy() if self.T else img_input
-        img_input = cv2.flip(img_input, 1) if self.mirror else img_input
         img_batch = self._gen_input_batch(img_input, self._box_size, self.scales)
         # inference
         hm, xm, ym, zm = self.sess.run([self.heatmap, self.x_heatmap, self.y_heatmap, self.z_heatmap],
@@ -108,20 +92,8 @@ class VNectEstimator:
         joints_3d = utils.extract_3d_joints_from_heatmap(joints_2d, xm_avg, ym_avg, zm_avg, self._box_size,
                                                          self._hm_factor)
         joints_2d, joints_3d = self._joint_filter(joints_2d, joints_3d)
-        # if self.T:
-        #     joints_2d = joints_2d[:, ::-1]
-        #     joints_3d = joints_3d[:, [1, 0, 2]]
         print('FPS: {:>2.2f}'.format(1 / (time.time() - t)))
 
-        if self.plot:
-            # 2d plotting
-            frame_square = utils.img_scale_squareify(img_input, self._box_size)
-            frame_square = utils.draw_limbs_2d(frame_square, joints_2d, self._joint_parents)
-            cv2.imshow('2D Prediction', frame_square)
-            # 3d plotting
-            self.imshow_3d(self.ax_3d, joints_3d, self._joint_parents)
-
-        # print('joints_3d[14]', joints_3d[14])
         return joints_2d, joints_3d
 
     @staticmethod
