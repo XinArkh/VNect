@@ -13,12 +13,18 @@ from src.estimator import VNectEstimator
 ### Functions ###
 #################
 def joints_iter_gen():
+    """
+    a generator to yield joints iteratively, supporting 3d animation plot
+    """
     global joints_3d
     while 1:
         yield joints_3d
 
 
 def my_exit(camera_capture):
+    """
+    exit opencv environment
+    """
     try:
         camera_capture.release()
         cv2.destroyAllWindows()

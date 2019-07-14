@@ -21,6 +21,11 @@ def vector_norm(v):
 
 
 class Joints2Angles:
+    """
+    parse 3d joints into angles for Baxter Robot controlling.
+    calculation formula refer to:
+    https://github.com/birlrobotics/birl_baxter_demos/blob/master/kinect_based_arm_tracking/scripts/tf_listen_v8_puber.py
+    """
     def __init__(self, filter=True):
         print('Initializing Joints2Angles...')
         self.filter = filter
@@ -101,5 +106,5 @@ class Joints2Angles:
         s0_r = s0_r + np.pi / 4
         s1_r = -s1_r
 
-        # return s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r  # radian, float64
-        return np.round(np.rad2deg([s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r])).astype(np.int32)  # degree, int32
+        return s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r  # radian, float64
+        # return np.round(np.rad2deg([s0_l, s1_l, e0_l, e1_l, s0_r, s1_r, e0_r, e1_r])).astype(np.int32)  # degree, int32

@@ -6,8 +6,8 @@ import time
 import serial
 import threading
 import numpy as np
-from src.hog_box import HOGBox
 from src import utils
+from src.hog_box import HOGBox
 from src.ros_talker import RosTalker
 from src.estimator import VNectEstimator
 from src.joints2angles import Joints2Angles
@@ -17,12 +17,18 @@ from src.joints2angles import Joints2Angles
 ### Functions ###
 #################
 def joints_iter_gen():
+    """
+    a generator to yield joints iteratively, supporting 3d animation plot
+    """
     global joints_3d
     while 1:
         yield joints_3d
 
 
 def ser_thread_func(COM='COM6', baudrate=9600, freq=20):
+    """
+    a sub thread function to send serial message with a fixed frequency
+    """
     global angles_r
     ser = serial.Serial(COM, baudrate, timeout=0)
     plock = threading.Lock()
@@ -41,6 +47,9 @@ def ser_thread_func(COM='COM6', baudrate=9600, freq=20):
 
 
 def my_exit(camera_capture):
+    """
+    exit opencv environment
+    """
     try:
         camera_capture.release()
         cv2.destroyAllWindows()
@@ -53,8 +62,8 @@ def my_exit(camera_capture):
 ### Parameters ###
 ##################
 # the input camera serial number in the PC (int), or PATH to input video (str)
-video = 0
-# video = './pic/wx/1/wx1.mp4'
+# video = 0
+video = './pic/test_video.mp4'
 # whether apply transposed matrix (when camera is flipped)
 # T = True
 T = False
