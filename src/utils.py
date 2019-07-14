@@ -7,6 +7,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
+from matplotlib.animation import FuncAnimation
 
 
 def img_scale(img, scale):
@@ -20,7 +21,7 @@ def img_padding(img, box_size, offset, pad_num=0):
     """
     pad the image in left and right sides averagely to fill the box size
 
-    padNum: the number to be filled (0-->(0, 0, 0)==black; 128-->(128, 128, 128)==grey)
+    pad_num: the number to be filled (0-->(0, 0, 0)==black; 128-->(128, 128, 128)==grey)
     """
     h, w = img.shape[:2]
     assert h == box_size, 'height of the image not equal to box size'
@@ -37,7 +38,7 @@ def img_scale_squareify(img, box_size):
     scale and squareify the image to get a square image with standard box size
 
     img: BGR image
-    boxsize: the length of the square area
+    box_size: the length of the square area
     """
     h, w = img.shape[:2]
     scale = box_size / h
@@ -99,7 +100,7 @@ def extract_3d_joints_from_heatmap(joints_2d, x_hm, y_hm, z_hm, box_size, hm_fac
     y direction: up --> down
     z direction: forawrd --> backward
     """
-    scaler = 100
+    scaler = 100  # scaler=100 -> mm unit; scaler=10 -> cm unit
     joints_3d = np.zeros((x_hm.shape[2], 3), dtype=np.float32)
 
     for joint_num in range(x_hm.shape[2]):
@@ -136,6 +137,51 @@ def draw_limbs_3d(ax, joints_3d, limb_parents):
         y_pair = [joints_3d[i, 1], joints_3d[limb_parents[i], 1]]
         z_pair = [joints_3d[i, 2], joints_3d[limb_parents[i], 2]]
         ax.plot(x_pair, y_pair, zs=z_pair, linewidth=3)
+
+
+class PoseAnimation3d:
+    def __init__(self, ax, joint_parents):
+        self.joint_parents = joint_parents
+        self.ax = ax
+        self.ax.view_init(-90, -90)
+        self.ax.set_xlim(-500, 500)
+        self.ax.set_ylim(-500, 500)
+        self.ax.set_zlim(-500, 500)
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
+        self.ax.set_zticks([])
+        white_color = (1.0, 1.0, 1.0, 0.0)
+        self.ax.w_xaxis.set_pane_color(white_color)
+        self.ax.w_yaxis.set_pane_color(white_color)
+        self.ax.w_xaxis.line.set_color(white_color)
+        self.ax.w_yaxis.line.set_color(white_color)
+        self.ax.w_zaxis.line.set_color(white_color)
+        self.skeletons = [self.ax.plot([], [], [], '-', linewidth=3)[0] for _ in range(21)]
+
+    def ani_init(self):
+        for skeleton in self.skeletons:
+            skeleton.set_data([], [])
+            skeleton.set_3d_properties([])
+        return self.skeletons
+
+    def __call__(self, joints_3d):
+        for i, skeleton in enumerate(self.skeletons):
+            x_pair = [joints_3d[i, 0], joints_3d[self.joint_parents[i], 0]]
+            y_pair = [joints_3d[i, 1], joints_3d[self.joint_parents[i], 1]]
+            z_pair = [joints_3d[i, 2], joints_3d[self.joint_parents[i], 2]]
+            skeleton.set_data(x_pair, y_pair)
+            skeleton.set_3d_properties(z_pair)
+        return self.skeletons
+
+
+def plot_3d_init(joint_parents, joints_iter_gen):
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ani_update = PoseAnimation3d(ax, joint_parents)
+    global ani
+    ani = FuncAnimation(fig, ani_update, frames=joints_iter_gen, init_func=ani_update.ani_init, interval=20, blit=True)
+    plt.ion()
+    plt.show()
 
 
 def gen_heatmap(img_shape, center, sigma=3):

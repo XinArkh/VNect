@@ -8,8 +8,6 @@ sys.path.extend([os.path.dirname(os.path.abspath(__file__))])
 import cv2
 import time
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
 import tensorflow as tf
 import utils
 from OneEuroFilter import OneEuroFilter
@@ -22,15 +20,11 @@ class VNectEstimator:
     _hm_factor = 8
     # number of the joints to be detected
     _joints_num = 21
-    # parent joint indexes of each joint (for plotting the skeleton lines)
+    # parent joint indexes of each joint (for plotting the skeletal lines)
     _joint_parents = [16, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
 
-    def __init__(self, plot=True, T=False):
-        print('Initializing VnectEstimator...')
-        # whether plot 2d and 3d animation
-        self.plot = plot
-        # whether apply transposed matrix (when camera is flipped)
-        self.T = T
+    def __init__(self):
+        print('Initializing VNectEstimator...')
         # the ratio factors to scale the input image crops, no more than 1.0
         self.scales = [1]  # or [1, 0.7] to be consistent with the author when training
         # initialize one euro filters for all the joints
@@ -61,17 +55,10 @@ class VNectEstimator:
         self.x_heatmap = graph.get_tensor_by_name('split_2:1')
         self.y_heatmap = graph.get_tensor_by_name('split_2:2')
         self.z_heatmap = graph.get_tensor_by_name('split_2:3')
-
-        if self.plot:
-            self.ax_3d = plt.axes(projection='3d')
-            plt.ion()
-            self.ax_3d.clear()
-            plt.show()
-        print('Initialization done.')
+        print('VNectEstimator initialized.')
 
     def __call__(self, img_input):
         t = time.time()
-        img_input = np.transpose(img_input, axes=[1, 0, 2]).copy() if self.T else img_input
         img_batch = self._gen_input_batch(img_input, self._box_size, self.scales)
         # inference
         hm, xm, ym, zm = self.sess.run([self.heatmap, self.x_heatmap, self.y_heatmap, self.z_heatmap],
@@ -105,18 +92,7 @@ class VNectEstimator:
         joints_3d = utils.extract_3d_joints_from_heatmap(joints_2d, xm_avg, ym_avg, zm_avg, self._box_size,
                                                          self._hm_factor)
         joints_2d, joints_3d = self._joint_filter(joints_2d, joints_3d)
-        # if self.T:
-        #     joints_2d = joints_2d[:, ::-1]
-        #     joints_3d = joints_3d[:, [1, 0, 2]]
         print('FPS: {:>2.2f}'.format(1 / (time.time() - t)))
-
-        if self.plot:
-            # 2d plotting
-            frame_square = utils.img_scale_squareify(img_input, self._box_size)
-            frame_square = utils.draw_limbs_2d(frame_square, joints_2d, self._joint_parents)
-            cv2.imshow('2D Prediction', frame_square)
-            # 3d plotting
-            self.imshow_3d(self.ax_3d, joints_3d, self._joint_parents)
 
         return joints_2d, joints_3d
 
@@ -143,29 +119,13 @@ class VNectEstimator:
             joints_3d[i, 2] = self.filter_3d[i][2](joints_3d[i, 2], time.time())
         return joints_2d, joints_3d
 
-    @staticmethod
-    def imshow_3d(ax_3d, joints_3d, joint_parents):
-        ax_3d.clear()
-        ax_3d.view_init(-90, -90)
-        ax_3d.set_xlim(-500, 500)
-        ax_3d.set_ylim(-500, 500)
-        ax_3d.set_zlim(-500, 500)
-        ax_3d.set_xticks([])
-        ax_3d.set_yticks([])
-        ax_3d.set_zticks([])
-        white = (1.0, 1.0, 1.0, 0.0)
-        ax_3d.w_xaxis.set_pane_color(white)
-        ax_3d.w_yaxis.set_pane_color(white)
-        ax_3d.w_xaxis.line.set_color(white)
-        ax_3d.w_yaxis.line.set_color(white)
-        ax_3d.w_zaxis.line.set_color(white)
-        utils.draw_limbs_3d(ax_3d, joints_3d, joint_parents)
-        # the following line is unnecessary with matplotlib 3.0.0, but ought to be activated
-        # under matplotlib 3.0.2 (other versions not tested)
-        # plt.pause(0.00001)
-
 
 if __name__ == '__main__':
     estimator = VNectEstimator()
     j_2d, j_3d = estimator(cv2.imread('../pic/test_pic.jpg'))
-    print('\njoints_2d\n', j_2d, '\n\njoints_3d\n', j_3d)
+    print('\njoints_2d')
+    for i, j in enumerate(j_2d):
+        print(i, j)
+    print('\njoints_3d')
+    for i, j in enumerate(j_3d):
+        print(i, j)

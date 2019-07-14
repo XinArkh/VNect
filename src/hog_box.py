@@ -13,16 +13,16 @@ class HOGBox:
     # mouse click flag
     clicked = False
 
-    def __init__(self, T=False):
-        self.T = T
+    def __init__(self):
+        print('Initializing HOGBox...')
         self.hog = cv2.HOGDescriptor()
         self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
         self._box_init_window_name = 'Bounding Box Initialization'
         cv2.namedWindow(self._box_init_window_name)
-        cv2.setMouseCallback(self._box_init_window_name, self._on_mouse)
+        cv2.setMouseCallback(self._box_init_window_name, self.on_mouse)
+        print('HOGBox initialized.')
 
     def __call__(self, img):
-        img = np.transpose(img, axes=[1, 0, 2]).copy() if self.T else img
         H, W = img.shape[:2]
         found, w = self.hog.detectMultiScale(img)
         rect = self.cal_rect(found[np.argmax([found[i, 2] * found[i, 3] for i in range(len(found))])], H, W) \
@@ -37,7 +37,7 @@ class HOGBox:
             cv2.destroyWindow(self._box_init_window_name)
         return self.clicked, rect
 
-    def _on_mouse(self, event, x, y, flags, param):
+    def on_mouse(self, event, x, y, flags, param):
         """
         attain mouse clicking message
         """
