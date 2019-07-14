@@ -21,7 +21,7 @@ For the **caffe model** required in the repository: please contact [the author o
   - opencv-python 3.4.4.19
   - tensorflow-gpu 1.12.0
   - [pycaffe](https://github.com/BVLC/caffe/tree/windows)
-  - matplotlib 3.0.0 （recommended）
+  - matplotlib 3.0.0 (recommended in `benchmark.py`) or matplotlib 3.0.2
   - ……
 
 ## Setup
@@ -76,7 +76,9 @@ sudo cp -a distribute/python/caffe/ /usr/lib/python3.7/site-packages/
 
    ii) trigger any keyboard input to exit at any time.
 
-4. `run_pic.py` is a script processing **one single picture**: the outputs are 4×21 heatmaps and 2D results.
+4. `run_estimator_robot.py` provides ROS and serial connection for communication in robot controlling besides the functions in `run_estimator.py`.
+
+5. `run_pic.py` is a script processing **one single picture**: the outputs are 4×21 heatmaps and 2D results.
 
 
 
@@ -105,8 +107,7 @@ sudo cp -a distribute/python/caffe/ /usr/lib/python3.7/site-packages/
 
 1. Optimize the structure of the codes.
 2. Implement a better bounding box strategy.
-3. Figure out the reason why **matplotlib 3.0.2** is likely to be stuck (matplotlib 3.0.0 is recommended in this repo).
-4. Implement the training script.
+4. **Implement the training script.**
 
 
 
