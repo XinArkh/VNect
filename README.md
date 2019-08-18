@@ -16,11 +16,11 @@ For the **caffe model** required in the repository: please contact [the author o
 
 ## Environments
 
-- Python 3
+- Python 3.5
   - opencv-python 3.4.4.19
   - tensorflow-gpu 1.12.0
   - [pycaffe](https://github.com/BVLC/caffe/tree/windows)
-  - matplotlib 3.0.0 (I don't know why it shuts down with version 3.0.2!)
+  - matplotlib 3.0.0 or 3.0.2 (this module shuts down occasionally for unknown reason)
   - ……
 
 ## Setup
