@@ -15,7 +15,7 @@ from src.estimator import VNectEstimator
 ##################
 # the input camera serial number in the PC (int), or PATH to input video (str)
 # video = 0
-video = './0722wu/1.mp4'
+video = './pic/test_video.mp4'
 # whether apply transposed matrix (when camera is flipped)
 # T = True
 T = False
@@ -68,9 +68,10 @@ def hog_box():
 ### Main Loop ###
 #################
 ## trigger any keyboard events to stop the loop ##
-def main(q):
+def main(q_start3d, q_joints):
     init()
     x, y, w, h = hog_box()
+    q_start3d.put(True)
     t = time.time()
     success, frame = camera_capture.read()
     while success and cv2.waitKey(1) == -1:
@@ -79,7 +80,7 @@ def main(q):
         frame_cropped = frame[y:y + h, x:x + w, :]
         # vnect estimating process
         joints_2d, joints_3d = estimator(frame_cropped)
-        q.put(joints_3d)
+        q_joints.put(joints_3d)
 
         # 2d plotting
         frame_square = utils.img_scale_squareify(frame_cropped, box_size)
@@ -101,10 +102,11 @@ def main(q):
 
 
 if __name__ == '__main__':
-    q = mp.Queue()
-    ps_main = mp.Process(target=main, args=(q,))
-    ps_3dplot = mp.Process(target=utils.plot_3d_init, args=(joint_parents, q), daemon=True)
+    q_start3d = mp.Queue()
+    q_joints = mp.Queue()
+    ps_main = mp.Process(target=main, args=(q_start3d, q_joints))
+    ps_plot3d = mp.Process(target=utils.plot_3d, args=(q_start3d, q_joints, joint_parents), daemon=True)
 
     ps_main.start()
-    ps_3dplot.start()
+    ps_plot3d.start()
     ps_main.join()

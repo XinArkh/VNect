@@ -184,6 +184,19 @@ def plot_3d_init(joint_parents, joints_iter_gen):
     plt.show()
 
 
+def plot_3d(q_start3d, q_joints, joint_parents):
+    q_start3d.get()
+    def joints_iter_gen_inner():
+        while 1:
+            yield q_joints.get(True)
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ani_update = PoseAnimation3d(ax, joint_parents)
+    global ani
+    ani = FuncAnimation(fig, ani_update, frames=joints_iter_gen_inner, init_func=ani_update.ani_init, interval=15, blit=True)
+    plt.show()
+
+
 def gen_heatmap(img_shape, center, sigma=3):
     img_height, img_width = img_shape
     heatmap = np.zeros((img_height, img_width), dtype=np.float32)
