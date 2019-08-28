@@ -12,12 +12,26 @@ from matplotlib.animation import FuncAnimation
 
 def img_scale(img, scale):
     """
-    scale the input image by a same scale factor in both x and y directions
+    Resize a image by scale factor in both x and y directions.
+
+    :param img: input image
+    :param scale: scale factor, which is supposed to be side length of interpolated image / side length of source image
+    :return: the scaled image
     """
     return cv2.resize(img, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
 
 
-def hm_area_interp_bilinear(src, scale, center, area_size=10):
+def hm_local_interp_bilinear(src, scale, center, area_size=10):
+    """
+    Heatmap interpolation using a local bilinear method.
+    Reference website: https://zhuanlan.zhihu.com/p/49832048
+
+    :param src: input heatmap
+    :param scale: scale factor, which is supposed to be side length of interpolated image / side length of source image
+    :param center: coordinate of the local center in the heatmap, [row, column]
+    :param area_size: side length of local area in the interpolated heatmap
+    :return: the destination heatmap with local area being interpolated
+    """
     src_h, src_w = src.shape[:]
     dst_h, dst_w = [s * scale for s in src.shape[:]]
     y, x = [c * scale for c in center]
@@ -38,6 +52,14 @@ def hm_area_interp_bilinear(src, scale, center, area_size=10):
 
 
 def hm_pt_interp_bilinear(src, scale, point):
+    """
+    Calculate the value of one desired point using the idea of bilinear interpolation.
+
+    :param src: input heatmap
+    :param scale: scale factor, which is supposed to be side length of interpolated image / side length of source image
+    :param point: coordinate of the desired point in the interpolated heatmap, [row, column]
+    :return: the value of the desired point
+    """
     src_h, src_w = src.shape[:]
     dst_y, dst_x = point
     src_x = (dst_x + 0.5) / scale - 0.5
@@ -118,7 +140,7 @@ def extract_2d_joints_from_heatmaps(heatmaps, box_size, hm_factor):
     for joint_num in range(heatmaps.shape[2]):
         joint_coord_1 = np.unravel_index(np.argmax(heatmaps[:, :, joint_num]),
                                          (box_size // hm_factor, box_size // hm_factor))
-        heatmap_scaled = hm_area_interp_bilinear(heatmaps[:, :, joint_num], hm_factor, joint_coord_1)
+        heatmap_scaled = hm_local_interp_bilinear(heatmaps[:, :, joint_num], hm_factor, joint_coord_1)
         joint_coord_2 = np.unravel_index(np.argmax(heatmap_scaled), (box_size, box_size))
         joints_2d[joint_num, :] = joint_coord_2
     return joints_2d
