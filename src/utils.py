@@ -14,10 +14,55 @@ def img_scale(img, scale):
     """
     scale the input image by a same scale factor in both x and y directions
     """
-    return cv2.resize(img, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LANCZOS4)
+    return cv2.resize(img, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
 
 
-def img_padding(img, box_size, offset, pad_num=0):
+def hm_area_interp_bilinear(src, scale, center, area_size=10):
+    src_h, src_w = src.shape[:]
+    dst_h, dst_w = [s * scale for s in src.shape[:]]
+    y, x = [c * scale for c in center]
+    dst = np.zeros((dst_h, dst_w))
+    for dst_y in range(max(y - area_size // 2, 0), min(y + int(np.ceil(area_size / 2)), dst_h)):
+        for dst_x in range(max(x - area_size // 2, 0), min(x + int(np.ceil(area_size / 2)), dst_w)):
+            src_x = (dst_x + 0.5) / scale - 0.5
+            src_y = (dst_y + 0.5) / scale - 0.5
+            src_x_0 = int(src_x)
+            src_y_0 = int(src_y)
+            src_x_1 = min(src_x_0 + 1, src_w - 1)
+            src_y_1 = min(src_y_0 + 1, src_h - 1)
+
+            value0 = (src_x_1 - src_x) * src[src_y_0, src_x_0] + (src_x - src_x_0) * src[src_y_0, src_x_1]
+            value1 = (src_x_1 - src_x) * src[src_y_1, src_x_0] + (src_x - src_x_0) * src[src_y_1, src_x_1]
+            dst[dst_y, dst_x] = (src_y_1 - src_y) * value0 + (src_y - src_y_0) * value1
+    return dst
+
+
+def hm_pt_interp_bilinear(src, scale, point):
+    src_h, src_w = src.shape[:2]
+    dst_w, dst_h = [s * scale for s in src.shape[:2]]
+    scale_x = float(src_w) / dst_w  # x缩放比例
+    scale_y = float(src_h) / dst_h  # y缩放比例
+
+    dst = np.zeros((dst_h, dst_w, 3), dtype=np.uint8)
+    for dst_y in range(dst_h):  # 对height循环
+        for dst_x in range(dst_w):  # 对width循环
+            # 目标在源上的坐标
+            src_x = (dst_x + 0.5) * scale_x - 0.5
+            src_y = (dst_y + 0.5) * scale_y - 0.5
+            # 计算在源图上四个近邻点的位置
+            src_x_0 = int(np.floor(src_x))
+            src_y_0 = int(np.floor(src_y))
+            src_x_1 = min(src_x_0 + 1, src_w - 1)
+            src_y_1 = min(src_y_0 + 1, src_h - 1)
+
+            # 双线性插值
+            value0 = (src_x_1 - src_x) * src[src_y_0, src_x_0] + (src_x - src_x_0) * src[src_y_0, src_x_1]
+            value1 = (src_x_1 - src_x) * src[src_y_1, src_x_0] + (src_x - src_x_0) * src[src_y_1, src_x_1]
+            dst[dst_y, dst_x] = int((src_y_1 - src_y) * value0 + (src_y - src_y_0) * value1)
+    return dst
+
+
+def img_padding(img, box_size, pad_num=0):
     """
     pad the image in left and right sides averagely to fill the box size
 
@@ -28,8 +73,8 @@ def img_padding(img, box_size, offset, pad_num=0):
     assert w < box_size, 'width of the image not smaller than box size'
 
     img_padded = np.ones((box_size, box_size, 3), dtype=np.uint8) * pad_num
-    img_padded[:, box_size//2 - math.ceil(img.shape[1]/2): box_size//2 + math.ceil(img.shape[1]/2)-offset, :] = img
-
+    img_padded[:, box_size // 2 - img.shape[1] // 2: box_size // 2 + int(np.ceil(img.shape[1] / 2)),
+               :] = img
     return img_padded
 
 
@@ -44,11 +89,10 @@ def img_scale_squareify(img, box_size):
     scale = box_size / h
     img_scaled = img_scale(img, scale)
     if img_scaled.shape[1] < box_size:  # h > w
-        offset = img_scaled.shape[1] % 2
-        img_cropped = img_padding(img_scaled, box_size, offset)
+        img_cropped = img_padding(img_scaled, box_size)
     else:  # h <= w
-        img_cropped = img_scaled[:, img_scaled.shape[1]//2 - box_size//2: img_scaled.shape[1]//2 + box_size//2, :]
-
+        img_cropped = img_scaled[:, img_scaled.shape[1] // 2 - box_size // 2: img_scaled.shape[1] // 2 + box_size // 2,
+                                 :]
     assert img_cropped.shape == (box_size, box_size, 3), 'cropped image shape invalid'
     return img_cropped
 
@@ -72,20 +116,31 @@ def img_scale_padding(img, scale, pad_num=0):
     return img_scaled_padded
 
 
-def extract_2d_joints_from_heatmap(heatmap, box_size, hm_factor):
+def extract_2d_joints_from_heatmap(heatmaps, box_size, hm_factor):
     """
     rescale the heatmap to CNN input size, then record the coordinates of each joints
 
     joints_2d: a joints_num x 2 array, each row contains [row, column] coordinates of the corresponding joint
     """
-    assert heatmap.shape[0] == heatmap.shape[1]
-    heatmap_scaled = img_scale(heatmap, hm_factor)
-
-    joints_2d = np.zeros((heatmap_scaled.shape[2], 2), dtype=np.int16)
-    for joint_num in range(heatmap_scaled.shape[2]):
-        joint_coord = np.unravel_index(np.argmax(heatmap_scaled[:, :, joint_num]), (box_size, box_size))
+    assert heatmaps.shape[0] == heatmaps.shape[1]
+    # heatmap_scaled = img_scale(heatmap, hm_factor)
+    # heatmap = img_scale(heatmap, hm_factor)
+    # heatmaps_scaled = np.zeros((box_size, box_size, heatmaps.shape[2]))
+    joints_2d = np.zeros((heatmaps.shape[2], 2), dtype=np.int)
+    for joint_num in range(heatmaps.shape[2]):
+        joint_coord = np.unravel_index(np.argmax(heatmaps[:, :, joint_num]),
+                                       (box_size / hm_factor, box_size / hm_factor))
+        heatmap_scaled = hm_area_interp_bilinear(heatmaps[:, :, joint_num], hm_factor, joint_coord)
+        joint_coord = np.unravel_index(np.argmax(heatmap_scaled), (box_size, box_size))
         joints_2d[joint_num, :] = joint_coord
 
+    # for joint_num in range(heatmap.shape[2]):
+    #     joint_coord = np.unravel_index(np.argmax(heatmap[:, :, joint_num]), (box_size, box_size))
+    #     joints_2d[joint_num, :] = joint_coord
+        # joint_coord = np.unravel_index(np.argmax(heatmap[:, :, joint_num]),
+        #                                (box_size // hm_factor, box_size // hm_factor))
+        # joints_2d[joint_num, :] = [j * hm_factor for j in joint_coord]
+    # print(joints_2d)
     return joints_2d
 
 
@@ -105,10 +160,20 @@ def extract_3d_joints_from_heatmap(joints_2d, x_hm, y_hm, z_hm, box_size, hm_fac
 
     for joint_num in range(x_hm.shape[2]):
         coord_2d_h, coord_2d_w = joints_2d[joint_num][:]
+        coord_3d_h = coord_2d_h
+        coord_3d_w = coord_2d_w
 
-        joint_x = x_hm[max(int(coord_2d_h/hm_factor), 1), max(int(coord_2d_w/hm_factor), 1), joint_num] * scaler
-        joint_y = y_hm[max(int(coord_2d_h/hm_factor), 1), max(int(coord_2d_w/hm_factor), 1), joint_num] * scaler
-        joint_z = z_hm[max(int(coord_2d_h/hm_factor), 1), max(int(coord_2d_w/hm_factor), 1), joint_num] * scaler
+        x_hm_scaled = img_scale((x_hm + 0.4) * 255, hm_factor)
+        y_hm_scaled = img_scale((y_hm + 0.4) * 255, hm_factor)
+        z_hm_scaled = img_scale((z_hm + 0.4) * 255, hm_factor)
+        joint_x = (x_hm_scaled[coord_3d_h, coord_3d_w, joint_num] / 255 - 0.4) * scaler
+        joint_y = (y_hm_scaled[coord_3d_h, coord_3d_w, joint_num] / 255 - 0.4) * scaler
+        joint_z = (z_hm_scaled[coord_3d_h, coord_3d_w, joint_num] / 255 - 0.4) * scaler
+        # coord_3d_h = np.round(coord_2d_h / hm_factor).astype(np.int)
+        # coord_3d_w = np.round(coord_2d_w / hm_factor).astype(np.int)
+        # joint_x = x_hm[coord_3d_h, coord_3d_w, joint_num] * scaler
+        # joint_y = y_hm[coord_3d_h, coord_3d_w, joint_num] * scaler
+        # joint_z = z_hm[coord_3d_h, coord_3d_w, joint_num] * scaler
         joints_3d[joint_num, :] = [joint_x, joint_y, joint_z]
 
     # Subtract the root location to normalize the data
@@ -125,7 +190,7 @@ def draw_limbs_2d(img, joints_2d, limb_parents):
         y2 = joints_2d[limb_parents[limb_num], 1]
         length = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
         deg = math.degrees(math.atan2(x1 - x2, y1 - y2))
-        polygon = cv2.ellipse2Poly((int((y1 + y2) / 2), int((x1 + x2) / 2)), (int(length / 2), 3), int(deg), 0, 360, 1)
+        polygon = cv2.ellipse2Poly(((y1 + y2) // 2, (x1 + x2) // 2), (int(length / 2), 3), int(deg), 0, 360, 1)
         img = cv2.fillConvexPoly(img, polygon, color=(38, 73, 170))
     return img
 
@@ -186,14 +251,17 @@ def plot_3d_init(joint_parents, joints_iter_gen):
 
 def plot_3d(q_start3d, q_joints, joint_parents):
     q_start3d.get()
+
     def joints_iter_gen_inner():
         while 1:
             yield q_joints.get(True)
+
     fig = plt.figure()
     ax = plt.axes(projection='3d')
     ani_update = PoseAnimation3d(ax, joint_parents)
     global ani
-    ani = FuncAnimation(fig, ani_update, frames=joints_iter_gen_inner, init_func=ani_update.ani_init, interval=15, blit=True)
+    ani = FuncAnimation(fig, ani_update, frames=joints_iter_gen_inner, init_func=ani_update.ani_init, interval=15,
+                        blit=True)
     plt.show()
 
 
