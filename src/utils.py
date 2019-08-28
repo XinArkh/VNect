@@ -38,28 +38,19 @@ def hm_area_interp_bilinear(src, scale, center, area_size=10):
 
 
 def hm_pt_interp_bilinear(src, scale, point):
-    src_h, src_w = src.shape[:2]
-    dst_w, dst_h = [s * scale for s in src.shape[:2]]
-    scale_x = float(src_w) / dst_w  # x缩放比例
-    scale_y = float(src_h) / dst_h  # y缩放比例
+    src_h, src_w = src.shape[:]
+    dst_y, dst_x = point
+    src_x = (dst_x + 0.5) / scale - 0.5
+    src_y = (dst_y + 0.5) / scale - 0.5
+    src_x_0 = int(src_x)
+    src_y_0 = int(src_y)
+    src_x_1 = min(src_x_0 + 1, src_w - 1)
+    src_y_1 = min(src_y_0 + 1, src_h - 1)
 
-    dst = np.zeros((dst_h, dst_w, 3), dtype=np.uint8)
-    for dst_y in range(dst_h):  # 对height循环
-        for dst_x in range(dst_w):  # 对width循环
-            # 目标在源上的坐标
-            src_x = (dst_x + 0.5) * scale_x - 0.5
-            src_y = (dst_y + 0.5) * scale_y - 0.5
-            # 计算在源图上四个近邻点的位置
-            src_x_0 = int(np.floor(src_x))
-            src_y_0 = int(np.floor(src_y))
-            src_x_1 = min(src_x_0 + 1, src_w - 1)
-            src_y_1 = min(src_y_0 + 1, src_h - 1)
-
-            # 双线性插值
-            value0 = (src_x_1 - src_x) * src[src_y_0, src_x_0] + (src_x - src_x_0) * src[src_y_0, src_x_1]
-            value1 = (src_x_1 - src_x) * src[src_y_1, src_x_0] + (src_x - src_x_0) * src[src_y_1, src_x_1]
-            dst[dst_y, dst_x] = int((src_y_1 - src_y) * value0 + (src_y - src_y_0) * value1)
-    return dst
+    value0 = (src_x_1 - src_x) * src[src_y_0, src_x_0] + (src_x - src_x_0) * src[src_y_0, src_x_1]
+    value1 = (src_x_1 - src_x) * src[src_y_1, src_x_0] + (src_x - src_x_0) * src[src_y_1, src_x_1]
+    dst_val = (src_y_1 - src_y) * value0 + (src_y - src_y_0) * value1
+    return dst_val
 
 
 def img_padding(img, box_size, pad_num=0):
@@ -116,35 +107,24 @@ def img_scale_padding(img, scale, pad_num=0):
     return img_scaled_padded
 
 
-def extract_2d_joints_from_heatmap(heatmaps, box_size, hm_factor):
+def extract_2d_joints_from_heatmaps(heatmaps, box_size, hm_factor):
     """
     rescale the heatmap to CNN input size, then record the coordinates of each joints
 
     joints_2d: a joints_num x 2 array, each row contains [row, column] coordinates of the corresponding joint
     """
     assert heatmaps.shape[0] == heatmaps.shape[1]
-    # heatmap_scaled = img_scale(heatmap, hm_factor)
-    # heatmap = img_scale(heatmap, hm_factor)
-    # heatmaps_scaled = np.zeros((box_size, box_size, heatmaps.shape[2]))
     joints_2d = np.zeros((heatmaps.shape[2], 2), dtype=np.int)
     for joint_num in range(heatmaps.shape[2]):
-        joint_coord = np.unravel_index(np.argmax(heatmaps[:, :, joint_num]),
-                                       (box_size / hm_factor, box_size / hm_factor))
-        heatmap_scaled = hm_area_interp_bilinear(heatmaps[:, :, joint_num], hm_factor, joint_coord)
-        joint_coord = np.unravel_index(np.argmax(heatmap_scaled), (box_size, box_size))
-        joints_2d[joint_num, :] = joint_coord
-
-    # for joint_num in range(heatmap.shape[2]):
-    #     joint_coord = np.unravel_index(np.argmax(heatmap[:, :, joint_num]), (box_size, box_size))
-    #     joints_2d[joint_num, :] = joint_coord
-        # joint_coord = np.unravel_index(np.argmax(heatmap[:, :, joint_num]),
-        #                                (box_size // hm_factor, box_size // hm_factor))
-        # joints_2d[joint_num, :] = [j * hm_factor for j in joint_coord]
-    # print(joints_2d)
+        joint_coord_1 = np.unravel_index(np.argmax(heatmaps[:, :, joint_num]),
+                                         (box_size // hm_factor, box_size // hm_factor))
+        heatmap_scaled = hm_area_interp_bilinear(heatmaps[:, :, joint_num], hm_factor, joint_coord_1)
+        joint_coord_2 = np.unravel_index(np.argmax(heatmap_scaled), (box_size, box_size))
+        joints_2d[joint_num, :] = joint_coord_2
     return joints_2d
 
 
-def extract_3d_joints_from_heatmap(joints_2d, x_hm, y_hm, z_hm, box_size, hm_factor):
+def extract_3d_joints_from_heatmaps(joints_2d, x_hm, y_hm, z_hm, hm_factor):
     """
     obtain the 3D coordinates of each joint from its 2D coordinates
 
@@ -159,26 +139,17 @@ def extract_3d_joints_from_heatmap(joints_2d, x_hm, y_hm, z_hm, box_size, hm_fac
     joints_3d = np.zeros((x_hm.shape[2], 3), dtype=np.float32)
 
     for joint_num in range(x_hm.shape[2]):
-        coord_2d_h, coord_2d_w = joints_2d[joint_num][:]
-        coord_3d_h = coord_2d_h
-        coord_3d_w = coord_2d_w
-
-        x_hm_scaled = img_scale((x_hm + 0.4) * 255, hm_factor)
-        y_hm_scaled = img_scale((y_hm + 0.4) * 255, hm_factor)
-        z_hm_scaled = img_scale((z_hm + 0.4) * 255, hm_factor)
-        joint_x = (x_hm_scaled[coord_3d_h, coord_3d_w, joint_num] / 255 - 0.4) * scaler
-        joint_y = (y_hm_scaled[coord_3d_h, coord_3d_w, joint_num] / 255 - 0.4) * scaler
-        joint_z = (z_hm_scaled[coord_3d_h, coord_3d_w, joint_num] / 255 - 0.4) * scaler
-        # coord_3d_h = np.round(coord_2d_h / hm_factor).astype(np.int)
-        # coord_3d_w = np.round(coord_2d_w / hm_factor).astype(np.int)
-        # joint_x = x_hm[coord_3d_h, coord_3d_w, joint_num] * scaler
-        # joint_y = y_hm[coord_3d_h, coord_3d_w, joint_num] * scaler
-        # joint_z = z_hm[coord_3d_h, coord_3d_w, joint_num] * scaler
+        y_2d, x_2d = joints_2d[joint_num][:]
+        joint_x = (hm_pt_interp_bilinear(x_hm[:, :, joint_num], hm_factor,
+                                         (y_2d, x_2d))) * scaler
+        joint_y = (hm_pt_interp_bilinear(y_hm[:, :, joint_num], hm_factor,
+                                         (y_2d, x_2d))) * scaler
+        joint_z = (hm_pt_interp_bilinear(z_hm[:, :, joint_num], hm_factor,
+                                         (y_2d, x_2d))) * scaler
         joints_3d[joint_num, :] = [joint_x, joint_y, joint_z]
 
     # Subtract the root location to normalize the data
     joints_3d -= joints_3d[14, :]
-
     return joints_3d
 
 

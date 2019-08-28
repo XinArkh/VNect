@@ -88,9 +88,8 @@ class VNectEstimator:
         xm_avg /= len(self.scales)
         ym_avg /= len(self.scales)
         zm_avg /= len(self.scales)
-        joints_2d = utils.extract_2d_joints_from_heatmap(hm_avg, self._box_size, self._hm_factor)
-        joints_3d = utils.extract_3d_joints_from_heatmap(joints_2d, xm_avg, ym_avg, zm_avg, self._box_size,
-                                                         self._hm_factor)
+        joints_2d = utils.extract_2d_joints_from_heatmaps(hm_avg, self._box_size, self._hm_factor)
+        joints_3d = utils.extract_3d_joints_from_heatmaps(joints_2d, xm_avg, ym_avg, zm_avg, self._hm_factor)
         joints_2d, joints_3d = self._joint_filter(joints_2d, joints_3d)
         print('FPS: {:>2.2f}'.format(1 / (time.time() - t)))
 
