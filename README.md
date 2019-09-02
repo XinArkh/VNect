@@ -102,6 +102,7 @@ sudo cp -a distribute/python/caffe/ /usr/lib/python3.7/site-packages/
 
 4. Every input image is assumed to contain 21 joints to be found, which means it is easy to fit wrong results when a joint is actually not in the input.
 5. In some cases the estimation results are not so good as the results shown in the paper author's promotional video.
+6. UPDATE: the running speed is now faster thanks to some coordinate extraction optimization!
 
 
 
