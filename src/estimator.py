@@ -98,11 +98,11 @@ class VNectEstimator:
     @staticmethod
     def _gen_input_batch(img_input, box_size, scales):
         # any input image --> sqrared input image acceptable for the model
-        img_square = utils.img_scale_squareify(img_input, box_size)
+        img_square = utils.img_scale_squarify(img_input, box_size)
         # generate multi-scale input batch
         input_batch = []
         for scale in scales:
-            img = utils.img_scale_padding(img_square, scale) if scale < 1 else img_square
+            img = utils.img_reduce_padding(img_square, scale) if scale < 1 else img_square
             input_batch.append(img)
         # input image range: [0, 255) --> [-0.4, 0.6)
         input_batch = np.asarray(input_batch, dtype=np.float32) / 255 - 0.4

@@ -148,7 +148,7 @@ while success and cv2.waitKey(1) == -1:
     joints_2d, joints_3d = estimator(frame_cropped)
 
     # 2d plotting
-    frame_square = utils.img_scale_squareify(frame_cropped, box_size)
+    frame_square = utils.img_scale_squarify(frame_cropped, box_size)
     frame_square = utils.draw_limbs_2d(frame_square, joints_2d, joint_parents)
     cv2.imshow('2D Prediction', frame_square)
 

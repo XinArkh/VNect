@@ -83,7 +83,7 @@ def main(q_start3d, q_joints):
         q_joints.put(joints_3d)
 
         # 2d plotting
-        frame_square = utils.img_scale_squareify(frame_cropped, box_size)
+        frame_square = utils.img_scale_squarify(frame_cropped, box_size)
         frame_square = utils.draw_limbs_2d(frame_square, joints_2d, joint_parents)
         cv2.imshow('2D Prediction', frame_square)
 

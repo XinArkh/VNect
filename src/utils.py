@@ -75,65 +75,77 @@ def hm_pt_interp_bilinear(src, scale, point):
     return dst_val
 
 
-def img_padding(img, box_size, pad_num=0):
+def img_padding(img, box_size, color='black'):
     """
-    pad the image in left and right sides averagely to fill the box size
+    Given the input image and side length of the box, put the image into the center of the box.
 
-    pad_num: the number to be filled (0-->(0, 0, 0)==black; 128-->(128, 128, 128)==grey)
+    :param img: the input color image, whose longer side is equal to box size
+    :param box_size: the side length of the square box
+    :param color: indicating the padding area color
+    :return: the padded image
     """
     h, w = img.shape[:2]
-    assert h == box_size, 'height of the image not equal to box size'
-    assert w < box_size, 'width of the image not smaller than box size'
-
+    pad_num = 0
+    if not color == 'black':
+        if color == 'grey':
+            pad_num = 128
     img_padded = np.ones((box_size, box_size, 3), dtype=np.uint8) * pad_num
-    img_padded[:, box_size // 2 - img.shape[1] // 2: box_size // 2 + int(np.ceil(img.shape[1] / 2)),
-               :] = img
+    if h > w:
+        img_padded[:, box_size // 2 - w // 2: box_size // 2 + int(np.ceil(w / 2)), :] = img
+    else:  # h <= w
+        img_padded[box_size // 2 - h // 2: box_size // 2 + int(np.ceil(h / 2)), :, :] = img
     return img_padded
 
 
-def img_scale_squareify(img, box_size):
+def img_scale_squarify(img, box_size):
     """
-    scale and squareify the image to get a square image with standard box size
+    To scale and squarify the input image into a square box with fixed size.
 
-    img: BGR image
-    box_size: the length of the square area
+    :param img: the input color image
+    :param box_size: the length of the square box
+    :return: the box image
     """
     h, w = img.shape[:2]
-    scale = box_size / h
+    scale = box_size / max(h, w)
     img_scaled = img_scale(img, scale)
-    if img_scaled.shape[1] < box_size:  # h > w
-        img_cropped = img_padding(img_scaled, box_size)
-    else:  # h <= w
-        img_cropped = img_scaled[:, img_scaled.shape[1] // 2 - box_size // 2: img_scaled.shape[1] // 2 + box_size // 2,
-                                 :]
-    assert img_cropped.shape == (box_size, box_size, 3), 'cropped image shape invalid'
-    return img_cropped
+    img_padded = img_padding(img_scaled, box_size)
+    assert img_padded.shape == (box_size, box_size, 3), 'padded image shape invalid'
+    return img_padded
 
 
-def img_scale_padding(img, scale, pad_num=0):
+def img_reduce_padding(img, scale, color='black'):
     """
-    scale and pad the image
+    For a box image, reduce it and then pad the former area.
 
-    scale: no bigger than 1.0
+    :param img: the input box image
+    :param scale: scale factor, which is supposed to be side length of reduced image / side length of source image, < 1
+    :param color: the padding area color
     """
-    assert img.shape[0] == img.shape[1]
+    assert img.shape[0] == img.shape[1], 'input image not square'
     box_size = img.shape[0]
-    img_scaled = img_scale(img, scale)
-    pad_h = (box_size - img_scaled.shape[0]) // 2
-    pad_w = (box_size - img_scaled.shape[1]) // 2
-    pad_h_offset = (box_size - img_scaled.shape[0]) % 2
-    pad_w_offset = (box_size - img_scaled.shape[1]) % 2
-    img_scaled_padded = np.pad(img_scaled, ((pad_w, pad_w + pad_w_offset), (pad_h, pad_h + pad_h_offset), (0, 0)),
-                               mode='constant', constant_values=pad_num)
-
-    return img_scaled_padded
+    img_reduced = img_scale(img, scale)
+    pad_color = (0, 0, 0)
+    if not color == 'black':
+        if color == 'grey':
+            pad_color = (128, 128, 128)
+    pad_h = (box_size - img_reduced.shape[0]) // 2
+    pad_w = (box_size - img_reduced.shape[1]) // 2
+    pad_h_offset = (box_size - img_reduced.shape[0]) % 2
+    pad_w_offset = (box_size - img_reduced.shape[1]) % 2
+    img_reduced_padded = np.pad(img_reduced, ((pad_w, pad_w + pad_w_offset), (pad_h, pad_h + pad_h_offset), (0, 0)),
+                                mode='constant', constant_values=(
+            (pad_color[0], pad_color[0]), (pad_color[1], pad_color[1]), (pad_color[2], pad_color[2])))
+    return img_reduced_padded
 
 
 def extract_2d_joints_from_heatmaps(heatmaps, box_size, hm_factor):
     """
-    rescale the heatmap to CNN input size, then record the coordinates of each joints
+    Rescale the heatmap to CNN input size, then record the coordinates of each joint.
 
-    joints_2d: a joints_num x 2 array, each row contains [row, column] coordinates of the corresponding joint
+    :param heatmaps: the input heatmaps
+    :param box_size: the length of the square box, which is also the CNN input size
+    :param hm_factor: heatmap factor, indicating box size / heatmap size
+    :return: a 2D array with [joints_num, 2], each row of which means [row, column] coordinates of corresponding joint
     """
     assert heatmaps.shape[0] == heatmaps.shape[1]
     joints_2d = np.zeros((heatmaps.shape[2], 2), dtype=np.int)
@@ -148,18 +160,22 @@ def extract_2d_joints_from_heatmaps(heatmaps, box_size, hm_factor):
 
 def extract_3d_joints_from_heatmaps(joints_2d, x_hm, y_hm, z_hm, hm_factor):
     """
-    obtain the 3D coordinates of each joint from its 2D coordinates
+    Extract 3D coordinates of each joint according to its 2D coordinates.
 
-    joints_3d: a joints_num x 3 array, each row contains [x, y, z] coordinates of the corresponding joint
+    :param joints_2d: 2D array with [joints_num, 2], containing 2D coordinates the joints
+    :param x_hm: x coordinate heatmaps
+    :param y_hm: y coordinate heatmaps
+    :param z_hm: z coordinate heatmaps
+    :param hm_factor: heatmap factor, indicating box size / heatmap size
+    :return: a 3D array with [joints_num, 3], each row of which contains [x, y, z] coordinates of corresponding joint
 
     Notation:
     x direction: left --> right
     y direction: up --> down
-    z direction: forawrd --> backward
+    z direction: nearer --> farther
     """
     scaler = 100  # scaler=100 -> mm unit; scaler=10 -> cm unit
     joints_3d = np.zeros((x_hm.shape[2], 3), dtype=np.float32)
-
     for joint_num in range(x_hm.shape[2]):
         y_2d, x_2d = joints_2d[joint_num][:]
         joint_x = (hm_pt_interp_bilinear(x_hm[:, :, joint_num], hm_factor,
@@ -169,7 +185,6 @@ def extract_3d_joints_from_heatmaps(joints_2d, x_hm, y_hm, z_hm, hm_factor):
         joint_z = (hm_pt_interp_bilinear(z_hm[:, :, joint_num], hm_factor,
                                          (y_2d, x_2d))) * scaler
         joints_3d[joint_num, :] = [joint_x, joint_y, joint_z]
-
     # Subtract the root location to normalize the data
     joints_3d -= joints_3d[14, :]
     return joints_3d
