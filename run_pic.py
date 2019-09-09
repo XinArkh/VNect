@@ -35,13 +35,13 @@ with tf.Session() as sess:
     # x_heatmap, y_heatmap, z_heatmap = model.x_heatmap, model.y_heatmap, model.z_heatmap
     # sess.run(tf.global_variables_initializer())
 
-    img = cv2.imread('./pic/asd.png')
-    img_square = utils.img_scale_squareify(img, box_size)
+    img = cv2.imread('./pic/test_pic.jpg')
+    img_square = utils.img_scale_squarify(img, box_size)
     img_square = img_square[np.newaxis, ...]
 
     hm, xm, ym, zm = sess.run([heatmap, x_heatmap, y_heatmap, z_heatmap], {input_batch: img_square/255-0.4})
 
-    joints_2d = utils.extract_2d_joints_from_heatmap(hm[0, ...], box_size, hm_factor)
+    joints_2d = utils.extract_2d_joints_from_heatmaps(hm[0, ...], box_size, hm_factor)
 
     for i in range(21):
         if i == 0:
