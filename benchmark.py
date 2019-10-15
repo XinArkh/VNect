@@ -161,9 +161,8 @@ class VNectEstimator:
         ym_avg /= len(self.scales)
         zm_avg /= len(self.scales)
 
-        self.joints_2d = utils.extract_2d_joints_from_heatmap(hm_avg, self.box_size, self.hm_factor)
-        self.joints_3d = utils.extract_3d_joints_from_heatmap(self.joints_2d, xm_avg, ym_avg, zm_avg, self.box_size,
-                                                              self.hm_factor)
+        self.joints_2d = utils.extract_2d_joints_from_heatmaps(hm_avg, self.box_size, self.hm_factor)
+        self.joints_3d = utils.extract_3d_joints_from_heatmaps(self.joints_2d, xm_avg, ym_avg, zm_avg, self.hm_factor)
         # print(self.joints_2d, '\n', self.joints_3d)
 
     def _joint_coord_filter(self):
@@ -228,7 +227,7 @@ class VNectEstimator:
             # crop bounding box from the raw frame
             frame_cropped = frame[y:y+h, x:x+w, :]
             # crop --> one sqrare input img for CNN
-            self.frame_square = utils.img_scale_squareify(frame_cropped, self.box_size)
+            self.frame_square = utils.img_scale_squarify(frame_cropped, self.box_size)
             # one sqrare input img --> a batch of sqrare input imgs
             self._create_input_batch()
             # sqrare input img batch --CNN net--> 2d and 3d skeleton joint coordinates
