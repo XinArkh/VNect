@@ -38,6 +38,10 @@ def hm_local_interp_bilinear(src, scale, center, area_size=10):
     dst = np.zeros((dst_h, dst_w))
     for dst_y in range(max(y - area_size // 2, 0), min(y + int(np.ceil(area_size / 2)), dst_h)):
         for dst_x in range(max(x - area_size // 2, 0), min(x + int(np.ceil(area_size / 2)), dst_w)):
+            # pixel alignment
+            # src_x = dst_x / 8
+            # src_y = dst_y / 8
+            # center alignment
             src_x = (dst_x + 0.5) / scale - 0.5
             src_y = (dst_y + 0.5) / scale - 0.5
             src_x_0 = int(src_x)
@@ -150,11 +154,14 @@ def extract_2d_joints_from_heatmaps(heatmaps, box_size, hm_factor):
     assert heatmaps.shape[0] == heatmaps.shape[1]
     joints_2d = np.zeros((heatmaps.shape[2], 2), dtype=np.int)
     for joint_num in range(heatmaps.shape[2]):
-        joint_coord_1 = np.unravel_index(np.argmax(heatmaps[:, :, joint_num]),
-                                         (box_size // hm_factor, box_size // hm_factor))
-        heatmap_scaled = hm_local_interp_bilinear(heatmaps[:, :, joint_num], hm_factor, joint_coord_1)
-        joint_coord_2 = np.unravel_index(np.argmax(heatmap_scaled), (box_size, box_size))
-        joints_2d[joint_num, :] = joint_coord_2
+        # joint_coord_1 = np.unravel_index(np.argmax(heatmaps[:, :, joint_num]),
+        #                                  (box_size // hm_factor, box_size // hm_factor))
+        # heatmap_scaled = hm_local_interp_bilinear(heatmaps[:, :, joint_num], hm_factor, joint_coord_1)
+        # joint_coord_2 = np.unravel_index(np.argmax(heatmap_scaled), (box_size, box_size))
+        # joints_2d[joint_num, :] = joint_coord_2
+        heatmap_scaled = cv2.resize(heatmaps[:, :, joint_num], (0, 0), fx=8, fy=8, interpolation=cv2.INTER_LINEAR)
+        joint_coord = np.unravel_index(np.argmax(heatmap_scaled), (box_size, box_size))
+        joints_2d[joint_num, :] = joint_coord
     return joints_2d
 
 
@@ -177,6 +184,15 @@ def extract_3d_joints_from_heatmaps(joints_2d, x_hm, y_hm, z_hm, hm_factor):
     scaler = 100  # scaler=100 -> mm unit; scaler=10 -> cm unit
     joints_3d = np.zeros((x_hm.shape[2], 3), dtype=np.float32)
     for joint_num in range(x_hm.shape[2]):
+        # coord_2d_h, coord_2d_w = joints_2d[joint_num][:]
+        # coord_3d_h = coord_2d_h
+        # coord_3d_w = coord_2d_w
+        # x_hm_scaled = img_scale(x_hm, hm_factor)
+        # y_hm_scaled = img_scale(y_hm, hm_factor)
+        # z_hm_scaled = img_scale(z_hm, hm_factor)
+        # joint_x = x_hm_scaled[coord_3d_h, coord_3d_w, joint_num] * scaler
+        # joint_y = y_hm_scaled[coord_3d_h, coord_3d_w, joint_num] * scaler
+        # joint_z = z_hm_scaled[coord_3d_h, coord_3d_w, joint_num] * scaler
         y_2d, x_2d = joints_2d[joint_num][:]
         joint_x = (hm_pt_interp_bilinear(x_hm[:, :, joint_num], hm_factor,
                                          (y_2d, x_2d))) * scaler
@@ -289,5 +305,6 @@ def gen_heatmap(img_shape, center, sigma=3):
             exp = d / 2.0 / sigma / sigma
             if exp > th:
                 continue
-            heatmap[y][x] = np.clip(heatmap[y][x], math.exp(-exp), 1.0)
+            # heatmap[y][x] = np.clip(heatmap[y][x], math.exp(-exp), 1.0)
+            heatmap[y, x] = math.exp(-exp)
     return heatmap

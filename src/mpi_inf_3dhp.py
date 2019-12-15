@@ -9,6 +9,7 @@ import math
 import h5py
 import numpy as np
 import pandas as pd
+import utils
 
 
 class Mpi_Inf_3dhp:
@@ -21,9 +22,10 @@ class Mpi_Inf_3dhp:
     # joint indexes that being used in vnect model (total 21 joints)
     vnect_ids = [i - 1 for i in [8, 6, 15, 16, 17, 10, 11, 12, 24, 25, 26, 19, 20, 21, 5, 4, 7, 18, 13, 28, 23]]
     # frame size of the processed mpi_inf_3dhp dataset
-    img_size = 368
+    img_size = 2048
+    box_size = 368
     heatmap_size = 46
-    hm_factor = img_size / heatmap_size
+    hm_factor = box_size / heatmap_size
 
     def __init__(self, bpath, subjects=None, train_set=True):
         # select training set or test set of the dataset
@@ -42,33 +44,55 @@ class Mpi_Inf_3dhp:
 
     def load_data(self, batch_size, joints=None):
         joints = self.vnect_ids if joints is None else joints  # joints is a list showing which joints to choose
-        batch = self.df.sample(batch_size)
         # init x (image)
-        batch_x = np.zeros((batch_size, self.img_size, self.img_size, 3), dtype=np.uint8)  # shape: (None, 368, 368, 3)
+        batch_x = np.zeros((batch_size, self.box_size, self.box_size, 3), dtype=np.uint8)  # shape: (None, 368, 368, 3)
         # init y (annotation)  shape: (None, 46, 46, 21*4)
-        # batch_y = np.zeros((batch_size, self.heatmap_size, self.heatmap_size, len(joints) * 4), dtype=np.float32)
         batch_y = np.zeros((batch_size, self.heatmap_size, self.heatmap_size, len(joints) * 4), dtype=np.float32)
-        for i, fpath in enumerate(batch):
-            # print(fpath)
-            # load x
-            img = cv2.imread(fpath)
-            batch_x[i] = img
-            # load y
-            S, Seq, video, frame = self._parse_path(fpath, self.train_set)
+        load_num = 0
+        while load_num < batch_size:
+            fpath = self.df.sample(1).iloc[0]
+            S, Seq, video, frame = self.parse_path(fpath, self.train_set)
             h5_path_2 = '/S{0}/Seq{1}/annot2/video_{2}'.format(S, Seq, video)
             h5_path_univ3 = '/S{0}/Seq{1}/univ_annot3/video_{2}'.format(S, Seq, video)
+            coords = self.annots[h5_path_2][frame, :].reshape((-1, 2))
+            pole_left = np.min(coords[:, 0])
+            pole_right = np.max(coords[:, 0])
+            pole_top = np.min(coords[:, 1])
+            pole_bottom = np.max(coords[:, 1])
+            margin_w = int((pole_right - pole_left) * 0.2)
+            margin_h = int((pole_bottom - pole_top) * 0.1)
+            if not (pole_left >= 0 + margin_w and pole_right < self.img_size - margin_w and
+                    pole_top >= 0 + margin_h and pole_bottom < self.img_size - margin_h):
+                continue
+            img = cv2.imread(fpath)
+            img = utils.img_scale_squarify(img[int(pole_top-margin_h): int(pole_bottom+margin_h), int(pole_left-margin_w): int(pole_right+margin_w), :], self.box_size)
+            batch_x[load_num] = img  # load x
+            x_2_0 = pole_left - margin_w
+            y_2_0 = pole_top - margin_h
+            h = pole_bottom + margin_h - y_2_0
+            w = pole_right + margin_w - x_2_0
+            # load y
             for j, index in enumerate(joints):
-                x_2, y_2 = self.annots[h5_path_2][frame, 2 * index:2 * index + 2] / self.hm_factor
-                x_u3, y_u3, z_u3 = self.annots[h5_path_univ3][frame, 3 * index:3 * index + 3] / self.hm_factor
-                batch_y[i, ..., j] = self.gen_heatmap(self.heatmap_size, self.heatmap_size, x_2, y_2)
+                x_2, y_2 = self.annots[h5_path_2][frame, 2*index: 2*index+2]
+                if h > w:
+                    x_2 = (x_2 - x_2_0) * self.box_size / h + self.box_size // 2 - (w * self.box_size / h) // 2
+                    y_2 = (y_2 - y_2_0) * self.box_size / h
+                else:
+                    x_2 = (x_2 - x_2_0) * self.box_size / w
+                    y_2 = (y_2 - y_2_0) * self.box_size / w + self.box_size // 2 - (h * self.box_size / w) // 2
+                x_2, y_2 = x_2 / self.hm_factor, y_2 / self.hm_factor
+                batch_y[load_num, ..., j] = self.gen_heatmap(self.heatmap_size, self.heatmap_size, x_2, y_2)
+                # x_u3, y_u3, z_u3 = self.annots[h5_path_univ3][frame, 3 * index:3 * index + 3] / self.hm_factor
                 # batch_y[i, ..., j + len(joints)] =
                 # batch_y[i, ..., j + len(joints)*2] =
                 # batch_y[i, ..., j + len(joints)*3] =
+            
+            load_num += 1
 
         return batch_x, batch_y
 
     @staticmethod
-    def _parse_path(fpath, train=True):
+    def parse_path(fpath, train=True):
         if train:
             Subject = 'S'
             fname_re = 'frame_[0-9]*.jpg'
@@ -98,8 +122,7 @@ class Mpi_Inf_3dhp:
                 exp = d / 2.0 / sigma / sigma
                 if exp > th:
                     continue
-                # heatmap[y][x] = np.clip(heatmap[y][x], math.exp(-exp), 1.0)
-                heatmap[y][x] = np.clip(heatmap[y][x], math.exp(-exp), 10000)
+                heatmap[y, x] = math.exp(-exp)
         return heatmap
 
 
@@ -107,18 +130,13 @@ if __name__ == '__main__':
     import time
     m = Mpi_Inf_3dhp(r'E:\Datasets\mpi_inf_3dhp')
     start = time.time()
-    imgs, heatmaps = m.load_data(10)
-
+    imgs, heatmaps = m.load_data(1)
     cv2.imshow('1', imgs[0])
-    # cv2.imshow('2', heatmaps[0, ..., 0])
-    cv2.imshow('2', cv2.resize(heatmaps[0, ..., 0], (368, 368), interpolation=cv2.INTER_LANCZOS4))
-
+    cv2.imshow('2', cv2.resize(heatmaps[0, ..., 0], (368, 368)))
     print('loading time: %.3fs' % (time.time() - start))
-    img = cv2.resize(imgs[0], (46, 46), interpolation=cv2.INTER_LANCZOS4)
     heatmap = cv2.cvtColor(heatmaps[0, ..., 0], cv2.COLOR_GRAY2BGR)
-    # dst = img * 0.5 + heatmap * 255 * 0.5
-    dst = imgs[0] * 0.5 + cv2.resize(heatmap, (368, 368), interpolation=cv2.INTER_LANCZOS4) * 255 * 0.5
+    dst = imgs[0] * 0.5 + cv2.resize(heatmap, (368, 368)) * 255 * 0.5
     cv2.imshow('a', dst.astype(np.uint8))
-    # cv2.imshow('b', heatmaps[0, ..., 0])
+    cv2.imshow('b', heatmaps[0, ..., 0])
     cv2.waitKey()
     cv2.destroyAllWindows()
