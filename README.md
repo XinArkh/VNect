@@ -16,14 +16,13 @@ For the **caffe model** required in the repository: please contact [the author o
 
 ## Environments
 
-- Python 3.5
-  - opencv-python 3.4.4.19
-  - tensorflow-gpu 1.12.0
+- Python 3
+  - tensorflow-gpu v1 (1.12.0)
   - [pycaffe](https://github.com/BVLC/caffe/tree/windows)
-  - matplotlib 3.0.0 or 3.0.2 (this module shuts down occasionally for unknown reason)
-  - ……
+  - matplotlib 3.0.0 or 3.0.2 (v3.0.2 shuts down occasionally for unknown reason)
 
 ## Setup
+
 <details><summary>Fedora 29</summary>
 <p>
 
@@ -65,13 +64,13 @@ sudo cp -a distribute/python/caffe/ /usr/lib/python3.7/site-packages/
 
 ### Application
 
-1. `benchmark.py` is a class implementation containing all the elements needed to run the model.
+1. (Deperated) `benchmark.py` is a class implementation containing all the elements needed to run the model.
 
 2. `run_estimator.py` is a script for running with **video stream**.
 
-3. `run_estimator_ps.py` is a multiprocessing version script. When 3d plotting function shuts down in `run_estimator.py` mentioned above, you can try this one.
+3. (Recommended) `run_estimator_ps.py` is a multiprocessing version script. When 3d plotting function shuts down in `run_estimator.py` mentioned above, you can try this one.
 
-4. `run_estimator_robot.py` provides ROS and serial connection for communication in robot controlling besides the functions in `run_estimator.py`.
+4. `run_estimator_robot.py` additionally provides ROS network and/or serial connection for communication in robot controlling.
 
 5. **[NOTE]** To run the video stream based scripts mentioned above:
 
@@ -85,43 +84,42 @@ sudo cp -a distribute/python/caffe/ /usr/lib/python3.7/site-packages/
 
 ## Notes
 
-1. I don't know why in some cases the 3d plotting function shuts down in the script. It may result from the variety of programming environments. Anyone capable to fix this and pull a request would be gratefully appreciated.
+1. I don't know why in some cases the 3d plotting function (from matplotlib) shuts down in the script. It may result from the variety of programming environments. Anyone capable to fix this and pull a request would be gratefully appreciated.
 2. The input image in this implementation is in BGR color format (cv2.imread()) and the pixel value is regulated into a range of [-0.4, 0.6).
-3. The joint-parent map (detailed information in `joint_index.xlsx`):
+3. The joint-parent map (detailed information in `materials/joint_index.xlsx`):
 
 <p align="center">
     <img src="./pic/joint_index.png" height="300">
 </p>
 
-3. The joint positions (index numbers as above):
+3. I drew a diagram to show the joint positions (don't laugh):
 
 <p align="center">
     <img src="./pic/joint_pos.jpg" height="300">
 </p>
 
-
 4. Every input image is assumed to contain 21 joints to be found, which means it is easy to fit wrong results when a joint is actually not in the input.
 5. In some cases the estimation results are not so good as the results shown in the paper author's promotional video.
 6. UPDATE: the running speed is now faster thanks to some coordinate extraction optimization!
+7. The training script `train.py` is not complete yet (I failed to reconstruct the model:( So **do not use it**. Maybe some day in the future I will try to fix it. Also pulling requests are welcomed.
 
 
 
 ## TODO
 
-1. Optimize the structure of the codes.
-2. Implement a better bounding box strategy.
-4. **Implement the training script.**
+1. Implement a better bounding box strategy.
+2. **Implement the training script.**
 
 
 
 ## About Training Data
 
-Refer to [MPI-INF-3DHP Dataset](https://github.com/XinArkh/mpi_inf_3dhp)
+For MPI-INF-3DHP dataset, refer to [my another repository](https://github.com/XinArkh/mpi_inf_3dhp).
 
 
 
 ## Reference Repositories
 
-- original MATLAB implementation provided by the model author
+- original MATLAB implementation provided by the paper author.
 - [timctho/VNect-tensorflow](https://github.com/timctho/VNect-tensorflow)
 - [EJShim/vnect_estimator](https://github.com/EJShim/vnect_estimator)
