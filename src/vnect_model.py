@@ -55,7 +55,7 @@ class VNect:
                                                scope='res2c_branch2a')
         self.res2c_branch2b = tc.layers.conv2d(self.res2b_branch2a, kernel_size=3, padding='same', num_outputs=64,
                                                scope='res2c_branch2b')
-        self.res2c_branch2c = tc.layers.conv2d(self.res2b_branch2b, kernel_size=1, padding='valid', num_outputs=256,
+        self.res2c_branch2c = tc.layers.conv2d(self.res2c_branch2b, kernel_size=1, padding='valid', num_outputs=256,
                                                activation_fn=None, scope='res2c_branch2c')
         self.res2c = tf.add(self.res2c_branch2c, self.res2b, name='res2c_add')
         self.res2c = tf.nn.relu(self.res2c, name='res2c')
@@ -99,7 +99,7 @@ class VNect:
                                                scope='res3d_branch2b')
         self.res3d_branch2c = tc.layers.conv2d(self.res3d_branch2b, kernel_size=1, padding='valid', num_outputs=512,
                                                activation_fn=None, scope='res3d_branch2c')
-        self.res3d = tf.add(self.res3d_branch2c, self.res3b, name='res3d_add')
+        self.res3d = tf.add(self.res3d_branch2c, self.res3c, name='res3d_add')
         self.res3d = tf.nn.relu(self.res3d, name='res3d')
 
         # Residual block 4a
