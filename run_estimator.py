@@ -2,7 +2,6 @@
 # -*- coding: UTF-8 -*-
 
 import cv2
-import time
 import numpy as np
 from src import utils
 from src.hog_box import HOGBox
@@ -36,21 +35,20 @@ def my_exit(camera_capture):
 ##################
 ### Parameters ###
 ##################
-# the input camera serial number in the PC (int), or PATH to input video (str)
+# camera serial number (int) or video path (str)
 # video = 0
 video = './pic/test_video.mp4'
 # whether apply transposed matrix (when camera is flipped)
 # T = True
 T = False
-
-## vnect params ##
+# placeholder
+joints_3d = np.zeros((21, 3))
 # vnect input image size
 box_size = 368
 # parent joint indexes of each joint (for plotting the skeletal lines)
-joint_parents = [16, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
-
-# placeholder
-joints_3d = np.zeros((21, 3))
+joint_parents = [16, 15, 1, 2, 3, 1, 5, 6, 14, 8,
+                 9, 14, 11, 12, 14, 14, 1, 4, 7, 10,
+                 13]
 
 
 #######################
@@ -58,32 +56,25 @@ joints_3d = np.zeros((21, 3))
 #######################
 # initialize VNect estimator
 estimator = VNectEstimator()
-
-# open a txt file to save angle data
-# angles_file = open('angles.txt', 'w')
-
 # catch the video stream
 camera_capture = cv2.VideoCapture(video)
 assert camera_capture.isOpened(), 'Video stream not opened: %s' % str(video)
+W_img, H_img = (int(camera_capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                int(camera_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
 
 # use a simple HOG method to initialize bounding box
 hog = HOGBox()
-
-################
-### Box Loop ###
-################
-## click the mouse when ideal bounding box appears ##
 success, frame = camera_capture.read()
-# initialize bounding box as the maximum rectangle
-rect = 0, 0, frame.shape[1], frame.shape[0]
+rect = 0, 0, W_img, H_img
 while success and cv2.waitKey(1) == -1:
-    # .copy() to prevent an unexpected bug
-    frame = np.transpose(frame, axes=[1, 0, 2]).copy() if T else frame
+    if T:
+        # if not calling .copy(), an unexpected bug occurs
+        frame = np.transpose(frame, axes=[1, 0, 2]).copy()
     choose, rect = hog(frame)
     if choose:
         break
     success, frame = camera_capture.read()
-# the final static bounding box params
+# bounding box params
 x, y, w, h = rect
 
 
@@ -92,27 +83,35 @@ x, y, w, h = rect
 #################
 ## trigger any keyboard events to stop the loop ##
 
-# start 3d skeletal animation plotting
+# start 3d plotting
 utils.plot_3d_init(joint_parents, joints_iter_gen)
 
-t = time.time()
 success, frame = camera_capture.read()
 while success and cv2.waitKey(1) == -1:
+    if T:
+        frame = np.transpose(frame, axes=[1, 0, 2]).copy()
     # crop bounding box from the raw frame
-    frame = np.transpose(frame, axes=[1, 0, 2]).copy() if T else frame
-    frame_cropped = frame[y:y + h, x:x + w, :]
-    # vnect estimating process
+    frame_cropped = frame[y: y + h, x: x + w, :]
+    # vnect estimation
     joints_2d, joints_3d = estimator(frame_cropped)
-
     # 2d plotting
-    frame_square = utils.img_scale_squarify(frame_cropped, box_size)
-    frame_square = utils.draw_limbs_2d(frame_square, joints_2d, joint_parents)
-    cv2.imshow('2D Prediction', frame_square)
-
-    # write angle data into txt
-    # angles_file.write('%f %f %f %f %f %f %f %f\n' % tuple([a for a in angles]))
-
+    joints_2d[:, 0] += y
+    joints_2d[:, 1] += x
+    frame_draw = utils.draw_limbs_2d(frame.copy(), joints_2d, joint_parents, [x, y, w, h])
+    frame_draw = utils.img_scale(frame_draw, 1024 / max(W_img, H_img))
+    cv2.imshow('2D Prediction', frame_draw)
+    # update bounding box
+    y_min = (np.min(joints_2d[:, 0]))
+    y_max = (np.max(joints_2d[:, 0]))
+    x_min = (np.min(joints_2d[:, 1]))
+    x_max = (np.max(joints_2d[:, 1]))
+    buffer_x = 0.8 * (x_max - x_min + 1)
+    buffer_y = 0.2 * (y_max - y_min + 1)
+    x, y = (max(int(x_min - buffer_x / 2), 0),
+            max(int(y_min - buffer_y / 2), 0))
+    w, h = (int(min(x_max - x_min + buffer_x, W_img - x)),
+            int(min(y_max - y_min + buffer_y, H_img - y)))
+    # update frame
     success, frame = camera_capture.read()
 
-# angles_file.close()
 my_exit(camera_capture)

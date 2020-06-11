@@ -12,10 +12,10 @@ from matplotlib.animation import FuncAnimation
 
 def img_scale(img, scale):
     """
-    Resize a image by scale factor in both x and y directions.
+    Resize a image by s scaler in both x and y directions.
 
     :param img: input image
-    :param scale: scale factor, which is supposed to be side length of interpolated image / side length of source image
+    :param scale: scale  factor, new image side length / raw image side length
     :return: the scaled image
     """
     return cv2.resize(img, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
@@ -27,7 +27,7 @@ def hm_local_interp_bilinear(src, scale, center, area_size=10):
     Reference website: https://zhuanlan.zhihu.com/p/49832048
 
     :param src: input heatmap
-    :param scale: scale factor, which is supposed to be side length of interpolated image / side length of source image
+    :param scale: scale factor, new image side length / raw image side length
     :param center: coordinate of the local center in the heatmap, [row, column]
     :param area_size: side length of local area in the interpolated heatmap
     :return: the destination heatmap with local area being interpolated
@@ -60,7 +60,7 @@ def hm_pt_interp_bilinear(src, scale, point):
     Calculate the value of one desired point using the idea of bilinear interpolation.
 
     :param src: input heatmap
-    :param scale: scale factor, which is supposed to be side length of interpolated image / side length of source image
+    :param scale: scale factor, new image side length / raw image side length
     :param point: coordinate of the desired point in the interpolated heatmap, [row, column]
     :return: the value of the desired point
     """
@@ -89,16 +89,19 @@ def img_padding(img, box_size, color='black'):
     :return: the padded image
     """
     h, w = img.shape[:2]
-    pad_num = 0
-    if not color == 'black':
-        if color == 'grey':
-            pad_num = 128
-    img_padded = np.ones((box_size, box_size, 3), dtype=np.uint8) * pad_num
+    offset_x, offset_y = 0, 0
+    if color == 'black':
+        pad_color = [0, 0, 0]
+    elif color == 'grey':
+        pad_color = [128, 128, 128]
+    img_padded = np.ones((box_size, box_size, 3), dtype=np.uint8) * np.array(pad_color, dtype=np.uint8)
     if h > w:
-        img_padded[:, box_size // 2 - w // 2: box_size // 2 + int(np.ceil(w / 2)), :] = img
+        offset_x = box_size // 2 - w // 2
+        img_padded[:, offset_x: box_size // 2 + int(np.ceil(w / 2)), :] = img
     else:  # h <= w
-        img_padded[box_size // 2 - h // 2: box_size // 2 + int(np.ceil(h / 2)), :, :] = img
-    return img_padded
+        offset_y = box_size // 2 - h // 2
+        img_padded[offset_y: box_size // 2 + int(np.ceil(h / 2)), :, :] = img
+    return img_padded, [offset_x, offset_y]
 
 
 def img_scale_squarify(img, box_size):
@@ -110,39 +113,44 @@ def img_scale_squarify(img, box_size):
     :return: the box image
     """
     h, w = img.shape[:2]
-    scale = box_size / max(h, w)
-    img_scaled = img_scale(img, scale)
-    img_padded = img_padding(img_scaled, box_size)
+    scaler = box_size / max(h, w)
+    img_scaled = img_scale(img, scaler)
+    img_padded, [offset_x, offset_y] = img_padding(img_scaled, box_size)
     assert img_padded.shape == (box_size, box_size, 3), 'padded image shape invalid'
-    return img_padded
+    return img_padded, scaler, [offset_x, offset_y]
 
 
-def img_reduce_padding(img, scale, color='black'):
+def img_scale_padding(img, scaler, box_size, color='black'):
     """
-    For a box image, reduce it and then pad the former area.
+    For a box image, scale down it and then pad the former area.
 
     :param img: the input box image
-    :param scale: scale factor, which is supposed to be side length of reduced image / side length of source image, < 1
+    :param scaler: scale factor, new image side length / raw image side length, < 1
+    :param box_size: side length of the square box
     :param color: the padding area color
     """
-    assert img.shape[0] == img.shape[1], 'input image not square'
-    box_size = img.shape[0]
-    img_reduced = img_scale(img, scale)
-    pad_color = (0, 0, 0)
-    if not color == 'black':
-        if color == 'grey':
-            pad_color = (128, 128, 128)
-    pad_h = (box_size - img_reduced.shape[0]) // 2
-    pad_w = (box_size - img_reduced.shape[1]) // 2
-    pad_h_offset = (box_size - img_reduced.shape[0]) % 2
-    pad_w_offset = (box_size - img_reduced.shape[1]) % 2
-    img_reduced_padded = np.pad(img_reduced, ((pad_w, pad_w + pad_w_offset), (pad_h, pad_h + pad_h_offset), (0, 0)),
-                                mode='constant', constant_values=(
-            (pad_color[0], pad_color[0]), (pad_color[1], pad_color[1]), (pad_color[2], pad_color[2])))
-    return img_reduced_padded
+    img_scaled = img_scale(img, scaler)
+    if color == 'black':
+        pad_color = (0, 0, 0)
+    elif color == 'grey':
+        pad_color = (128, 128, 128)
+    pad_h = (box_size - img_scaled.shape[0]) // 2
+    pad_w = (box_size - img_scaled.shape[1]) // 2
+    pad_h_offset = (box_size - img_scaled.shape[0]) % 2
+    pad_w_offset = (box_size - img_scaled.shape[1]) % 2
+    img_scale_padded = np.pad(img_scaled,
+                              ((pad_w, pad_w + pad_w_offset),
+                               (pad_h, pad_h + pad_h_offset),
+                               (0, 0)),
+                              mode='constant',
+                              constant_values=(
+                                  (pad_color[0], pad_color[0]),
+                                  (pad_color[1], pad_color[1]),
+                                  (pad_color[2], pad_color[2])))
+    return img_scale_padded
 
 
-def extract_2d_joints_from_heatmaps(heatmaps, box_size, hm_factor):
+def extract_2d_joints(heatmaps, box_size, hm_factor):
     """
     Rescale the heatmap to CNN input size, then record the coordinates of each joint.
 
@@ -152,7 +160,7 @@ def extract_2d_joints_from_heatmaps(heatmaps, box_size, hm_factor):
     :return: a 2D array with [joints_num, 2], each row of which means [row, column] coordinates of corresponding joint
     """
     assert heatmaps.shape[0] == heatmaps.shape[1]
-    joints_2d = np.zeros((heatmaps.shape[2], 2), dtype=np.int)
+    joints_2d = np.zeros((heatmaps.shape[2], 2))
     for joint_num in range(heatmaps.shape[2]):
         # joint_coord_1 = np.unravel_index(np.argmax(heatmaps[:, :, joint_num]),
         #                                  (box_size // hm_factor, box_size // hm_factor))
@@ -165,7 +173,7 @@ def extract_2d_joints_from_heatmaps(heatmaps, box_size, hm_factor):
     return joints_2d
 
 
-def extract_3d_joints_from_heatmaps(joints_2d, x_hm, y_hm, z_hm, hm_factor):
+def extract_3d_joints(joints_2d, x_hm, y_hm, z_hm, hm_factor):
     """
     Extract 3D coordinates of each joint according to its 2D coordinates.
 
@@ -206,7 +214,8 @@ def extract_3d_joints_from_heatmaps(joints_2d, x_hm, y_hm, z_hm, hm_factor):
     return joints_3d
 
 
-def draw_limbs_2d(img, joints_2d, limb_parents):
+def draw_limbs_2d(img, joints_2d, limb_parents, rect):
+    # draw skeleton
     for limb_num in range(len(limb_parents)):
         x1 = joints_2d[limb_num, 0]
         y1 = joints_2d[limb_num, 1]
@@ -214,18 +223,45 @@ def draw_limbs_2d(img, joints_2d, limb_parents):
         y2 = joints_2d[limb_parents[limb_num], 1]
         length = ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
         deg = math.degrees(math.atan2(x1 - x2, y1 - y2))
-        polygon = cv2.ellipse2Poly(((y1 + y2) // 2, (x1 + x2) // 2), (int(length / 2), 3), int(deg), 0, 360, 1)
-        img = cv2.fillConvexPoly(img, polygon, color=(38, 73, 170))
+        # here round() returns float type, so use int() to convert it to integer type
+        polygon = cv2.ellipse2Poly((int(round((y1+y2)/2)), int(round((x1+x2)/2))),
+                                   (int(length/2), 3),
+                                   int(deg),
+                                   0, 360, 1)
+        img = cv2.fillConvexPoly(img, polygon, color=(49, 22, 122))
+        # draw rectangle
+        x, y, w, h = rect
+        pt1 = (x, y)
+        pt2 = (x + w, y + h)
+        cv2.rectangle(img, pt1, pt2, (60, 66, 207), 4)
+
     return img
 
 
-def draw_limbs_3d(ax, joints_3d, limb_parents):
-    # ax.clear()
+def draw_limbs_3d(joints_3d, joint_parents):
+    fig = plt.figure()
+    ax_3d = plt.axes(projection='3d')
+    ax_3d.clear()
+    ax_3d.view_init(-90, -90)
+    ax_3d.set_xlim(-500, 500)
+    ax_3d.set_ylim(-500, 500)
+    ax_3d.set_zlim(-500, 500)
+    ax_3d.set_xticks([])
+    ax_3d.set_yticks([])
+    ax_3d.set_zticks([])
+    white = (1.0, 1.0, 1.0, 0.0)
+    ax_3d.w_xaxis.set_pane_color(white)
+    ax_3d.w_yaxis.set_pane_color(white)
+    ax_3d.w_xaxis.line.set_color(white)
+    ax_3d.w_yaxis.line.set_color(white)
+    ax_3d.w_zaxis.line.set_color(white)
     for i in range(joints_3d.shape[0]):
-        x_pair = [joints_3d[i, 0], joints_3d[limb_parents[i], 0]]
-        y_pair = [joints_3d[i, 1], joints_3d[limb_parents[i], 1]]
-        z_pair = [joints_3d[i, 2], joints_3d[limb_parents[i], 2]]
-        ax.plot(x_pair, y_pair, zs=z_pair, linewidth=3)
+        x_pair = [joints_3d[i, 0], joints_3d[joint_parents[i], 0]]
+        y_pair = [joints_3d[i, 1], joints_3d[joint_parents[i], 1]]
+        z_pair = [joints_3d[i, 2], joints_3d[joint_parents[i], 2]]
+        ax_3d.plot(x_pair, y_pair, zs=z_pair, linewidth=3)
+    plt.ion()
+    plt.show()
 
 
 class PoseAnimation3d:

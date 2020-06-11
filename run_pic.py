@@ -3,70 +3,33 @@
 
 
 import cv2
-import numpy as np
-import tensorflow as tf
 from src import utils
+from src.hog_box import HOGBox
+from src.estimator import VNectEstimator
 
 
 box_size = 368
 hm_factor = 8
 joints_num = 21
 scales = [1.0, 0.7]
-limb_parents = [1, 15, 1, 2, 3, 1, 5, 6, 14, 8, 9, 14, 11, 12, 14, 14, 1, 4, 7, 10, 13]
+joint_parents = [1, 15, 1, 2, 3, 1, 5, 6, 14, 8,
+                 9, 14, 11, 12, 14, 14, 1, 4, 7, 10,
+                 13]
+estimator = VNectEstimator()
+img = cv2.imread('./pic/test_pic.jpg')
+hog = HOGBox()
+hog.clicked = True
+choose, rect = hog(img.copy())
+x, y, w, h = rect
+img_cropped = img[y: y + h, x: x + w, :]
+joints_2d, joints_3d = estimator(img_cropped)
+# 3d plotting
+utils.draw_limbs_3d(joints_3d, joint_parents)
+# 2d plotting
+joints_2d[:, 0] += y
+joints_2d[:, 1] += x
+img_draw = utils.draw_limbs_2d(img.copy(), joints_2d, joint_parents, [x, y, w, h])
+cv2.imshow('2D Prediction', img_draw)
 
-with tf.Session() as sess:
-    saver = tf.train.import_meta_graph('./models/tf_model/vnect_tf.meta')
-    saver.restore(sess, tf.train.latest_checkpoint('./models/tf_model/'))
-    # saver = tf.train.import_meta_graph('./models/trained/vnect_tf-1.meta')
-    # saver.restore(sess, tf.train.latest_checkpoint('./models/trained/'))
-
-    graph = tf.get_default_graph()
-    input_batch = graph.get_tensor_by_name('Placeholder:0')
-    heatmap = graph.get_tensor_by_name('split_2:0')
-    x_heatmap = graph.get_tensor_by_name('split_2:1')
-    y_heatmap = graph.get_tensor_by_name('split_2:2')
-    z_heatmap = graph.get_tensor_by_name('split_2:3')
-
-
-    # from src.vnect_model import VNect
-    # model = VNect()
-    # input_batch = model.input_holder
-    # heatmap = model.heatmap
-    # x_heatmap, y_heatmap, z_heatmap = model.x_heatmap, model.y_heatmap, model.z_heatmap
-    # sess.run(tf.global_variables_initializer())
-
-    img = cv2.imread('./pic/test_pic.jpg')
-    img_square = utils.img_scale_squarify(img, box_size)
-    img_square = img_square[np.newaxis, ...]
-
-    hm, xm, ym, zm = sess.run([heatmap, x_heatmap, y_heatmap, z_heatmap], {input_batch: img_square/255-0.4})
-
-    joints_2d = utils.extract_2d_joints_from_heatmaps(hm[0, ...], box_size, hm_factor)
-
-    for i in range(21):
-        if i == 0:
-            himg = hm[0, :, :, i]
-            ximg = xm[0, :, :, i]
-            yimg = ym[0, :, :, i]
-            zimg = zm[0, :, :, i]
-        else:
-            tmp = hm[0, :, :, i]
-            himg = np.hstack([himg, tmp])
-            tmp = xm[0, :, :, i]
-            ximg = np.hstack([ximg, tmp])
-            tmp = ym[0, :, :, i]
-            yimg = np.hstack([yimg, tmp])
-            tmp = zm[0, :, :, i]
-            zimg = np.hstack([zimg, tmp])
-
-    all_hm = np.vstack([himg, ximg, yimg, zimg])
-    cv2.imshow('all heatmaps', all_hm*128)
-
-    img_res2d = utils.draw_limbs_2d(img_square[0, ...], joints_2d, limb_parents)
-    cv2.imshow('2D results', img_res2d)
-
-    cv2.waitKey()
-    cv2.destroyAllWindows()
-
-print(hm[0, :, :, 0])
-# np.savetxt('original', hm[0, :, :, 0])
+cv2.waitKey()
+cv2.destroyAllWindows()
