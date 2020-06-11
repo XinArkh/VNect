@@ -58,7 +58,7 @@ class VNect:
         self.res2c_branch2c = tc.layers.conv2d(self.res2b_branch2b, kernel_size=1, padding='valid', num_outputs=256,
                                                activation_fn=None, scope='res2c_branch2c')
         self.res2c = tf.add(self.res2c_branch2c, self.res2b, name='res2c_add')
-        self.res2c = tf.nn.relu(self.res2b, name='res2c')
+        self.res2c = tf.nn.relu(self.res2c, name='res2c')
 
         # Residual block 3a
         self.res3a_branch1 = tc.layers.conv2d(self.res2c, kernel_size=1, padding='valid', num_outputs=512,
@@ -225,10 +225,10 @@ class VNect:
             for variable in tf.global_variables():
                 var_name = variable.name.split(':')[0]
                 # print(var_name)
-                self._assign_weights_from_dict(var_name, model_weights, sess)
+                self.assign_weights_from_dict(var_name, model_weights, sess)
 
     @staticmethod
-    def _assign_weights_from_dict(var_name, model_weights, sess):
+    def assign_weights_from_dict(var_name, model_weights, sess):
         with tf.variable_scope('', reuse=True):
             var_tf = tf.get_variable(var_name)
             print('assigning', var_tf)
