@@ -2,7 +2,7 @@
 
 A tensorflow implementation of [VNect: Real-time 3D Human Pose Estimation with a Single RGB Camera](http://gvv.mpi-inf.mpg.de/projects/VNect/).
 
-##### For the caffe model/weights required in the repository: please contact [the author of the paper](http://gvv.mpi-inf.mpg.de/projects/VNect/).
+For the caffe model/weights required in the repository: please contact [the author of the paper](http://gvv.mpi-inf.mpg.de/projects/VNect/).
 
 <p align="center">
     <img src="./pic/test_pic_show.png" height="260">
@@ -14,7 +14,7 @@ A tensorflow implementation of [VNect: Real-time 3D Human Pose Estimation with a
 
 ## Environments
 
-- Python 3.7
+- Python 3.x
 - tensorflow-gpu 1.x
 - [pycaffe](https://github.com/BVLC/caffe/tree/windows)
 
