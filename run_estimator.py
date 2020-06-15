@@ -36,11 +36,11 @@ def my_exit(camera_capture):
 ### Parameters ###
 ##################
 # camera serial number (int) or video path (str)
-video = 0
-# video = './pic/test_video.mp4'
+# video = 0
+video = './pic/test_video.mp4'
 # whether apply transposed matrix (when camera is flipped)
-T = True
-# T = False
+# T = True
+T = False
 # placeholder
 joints_3d = np.zeros((21, 3))
 # vnect input image size
