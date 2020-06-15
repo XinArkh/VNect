@@ -56,7 +56,10 @@ def hog_box():
     while success and cv2.waitKey(1) == -1:
         if T:
             # if not calling .copy(), an unexpected bug occurs
-            frame = np.transpose(frame, axes=[1, 0, 2]).copy()
+            # mirror
+            # frame = np.transpose(frame, axes=[1, 0, 2]).copy()
+            # no mirror
+            frame = np.rot90(frame, 3).copy()
         choose, rect = hog(frame)
         if choose:
             break
@@ -76,7 +79,10 @@ def main(q_start3d, q_joints):
     success, frame = camera_capture.read()
     while success and cv2.waitKey(1) == -1:
         if T:
-            frame = np.transpose(frame, axes=[1, 0, 2]).copy()
+            # mirror
+            # frame = np.transpose(frame, axes=[1, 0, 2])
+            # no mirror
+            frame = np.rot90(frame, 3)
         # crop bounding box from the raw frame
         frame_cropped = frame[y:y + h, x:x + w, :]
         # vnect estimation

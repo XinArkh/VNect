@@ -36,11 +36,11 @@ def my_exit(camera_capture):
 ### Parameters ###
 ##################
 # camera serial number (int) or video path (str)
-# video = 0
-video = './pic/test_video.mp4'
+video = 0
+# video = './pic/test_video.mp4'
 # whether apply transposed matrix (when camera is flipped)
-# T = True
-T = False
+T = True
+# T = False
 # placeholder
 joints_3d = np.zeros((21, 3))
 # vnect input image size
@@ -69,7 +69,10 @@ rect = 0, 0, W_img, H_img
 while success and cv2.waitKey(1) == -1:
     if T:
         # if not calling .copy(), an unexpected bug occurs
-        frame = np.transpose(frame, axes=[1, 0, 2]).copy()
+        # mirror
+        # frame = np.transpose(frame, axes=[1, 0, 2]).copy()
+        # no mirror
+        frame = np.rot90(frame, 3).copy()
     choose, rect = hog(frame)
     if choose:
         break
@@ -89,7 +92,10 @@ utils.plot_3d_init(joint_parents, joints_iter_gen)
 success, frame = camera_capture.read()
 while success and cv2.waitKey(1) == -1:
     if T:
-        frame = np.transpose(frame, axes=[1, 0, 2]).copy()
+        # mirror
+        # frame = np.transpose(frame, axes=[1, 0, 2])
+        # no mirror
+        frame = np.rot90(frame, 3)
     # crop bounding box from the raw frame
     frame_cropped = frame[y: y + h, x: x + w, :]
     # vnect estimation
