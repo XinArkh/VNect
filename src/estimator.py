@@ -15,7 +15,7 @@ from OneEuroFilter import OneEuroFilter
 
 class VNectEstimator:
 
-    # the side length of the bounding box
+    # the side length of the CNN input box
     box_size = 368
     # the input box size is 8 times the side length of the output heatmaps
     hm_factor = 8
@@ -26,27 +26,29 @@ class VNectEstimator:
 
     def __init__(self):
         print('Initializing VNect Estimator...')
-        # the ratio factors to scale the input image crops, no more than 1.0
-        self.scales = [1, 0.7]  # different scales to get better average performance
+        # the scale factors to zoom down the input image crops
+        # put different scales to get better average performance
+        # for faster loops, use less scales e.g. [1], [1, 0.7]
+        self.scales = [1, 0.85, 0.7]
         # initializing one euro filters for all the joints
-        config_2d = {
-            'freq': 120,
-            'mincutoff': 1.7,
-            'beta': 0.3,
-            'dcutoff': 1.0
+        filter_config_2d = {
+            'freq': 30,        # system frequency about 30 Hz
+            'mincutoff': 1.7,  # value refer to the paper
+            'beta': 0.3,       # value refer to the paper
+            'dcutoff': 0.4     # not mentioned, empirically set
         }
-        config_3d = {
-            'freq': 120,
-            'mincutoff': 0.8,
-            'beta': 0.4,
-            'dcutoff': 1.0
+        filter_config_3d = {
+            'freq': 30,        # system frequency about 30 Hz
+            'mincutoff': 0.8,  # value refer to the paper
+            'beta': 0.4,       # value refer to the paper
+            'dcutoff': 0.4     # not mentioned, empirically set
         }
-        self.filter_2d = [(OneEuroFilter(**config_2d),
-                           OneEuroFilter(**config_2d))
+        self.filter_2d = [(OneEuroFilter(**filter_config_2d),
+                           OneEuroFilter(**filter_config_2d))
                           for _ in range(self.joints_sum)]
-        self.filter_3d = [(OneEuroFilter(**config_3d),
-                           OneEuroFilter(**config_3d),
-                           OneEuroFilter(**config_3d))
+        self.filter_3d = [(OneEuroFilter(**filter_config_3d),
+                           OneEuroFilter(**filter_config_3d),
+                           OneEuroFilter(**filter_config_3d))
                           for _ in range(self.joints_sum)]
         # load pretrained VNect model
         self.sess = tf.Session()
@@ -126,12 +128,13 @@ class VNectEstimator:
         ym_avg /= len(self.scales)
         zm_avg /= len(self.scales)
 
+        # joints_2d are in box size scale
         joints_2d = utils.extract_2d_joints(hm_avg, self.box_size, self.hm_factor)
         joints_2d = self.joint_filter(joints_2d, dim=2)
         joints_3d = utils.extract_3d_joints(joints_2d, xm_avg, ym_avg, zm_avg, self.hm_factor)
         joints_3d = self.joint_filter(joints_3d, dim=3)
 
-        # align 2d coordinates to input image shape
+        # rescale joints_2d to input image scale
         joints_2d[:, 0] = (joints_2d[:, 0] - offset_y) / scaler
         joints_2d[:, 1] = (joints_2d[:, 1] - offset_x) / scaler
 

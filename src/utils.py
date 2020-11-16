@@ -57,11 +57,11 @@ def hm_local_interp_bilinear(src, scale, center, area_size=10):
 
 def hm_pt_interp_bilinear(src, scale, point):
     """
-    Calculate the value of one desired point using the idea of bilinear interpolation.
+    Determine the value of one desired point by bilinear interpolation.
 
     :param src: input heatmap
-    :param scale: scale factor, new image side length / raw image side length
-    :param point: coordinate of the desired point in the interpolated heatmap, [row, column]
+    :param scale: scale factor, input box side length / heatmap side length
+    :param point: position of the desired point in input box, [row, column]
     :return: the value of the desired point
     """
     src_h, src_w = src.shape[:]
@@ -110,7 +110,7 @@ def img_scale_squarify(img, box_size):
 
     :param img: the input color image
     :param box_size: the length of the square box
-    :return: the box image
+    :return: box image, scaler and offsets
     """
     h, w = img.shape[:2]
     scaler = box_size / max(h, w)
@@ -152,14 +152,13 @@ def img_scale_padding(img, scaler, box_size, color='black'):
 
 def extract_2d_joints(heatmaps, box_size, hm_factor):
     """
-    Rescale the heatmap to CNN input size, then record the coordinates of each joint.
+    Rescale the heatmap to input box size, then extract the coordinates for every joint.
 
     :param heatmaps: the input heatmaps
-    :param box_size: the length of the square box, which is also the CNN input size
+    :param box_size: the side length of the input box
     :param hm_factor: heatmap factor, indicating box size / heatmap size
     :return: a 2D array with [joints_num, 2], each row of which means [row, column] coordinates of corresponding joint
     """
-    assert heatmaps.shape[0] == heatmaps.shape[1]
     joints_2d = np.zeros((heatmaps.shape[2], 2))
     for joint_num in range(heatmaps.shape[2]):
         # joint_coord_1 = np.unravel_index(np.argmax(heatmaps[:, :, joint_num]),
@@ -167,8 +166,11 @@ def extract_2d_joints(heatmaps, box_size, hm_factor):
         # heatmap_scaled = hm_local_interp_bilinear(heatmaps[:, :, joint_num], hm_factor, joint_coord_1)
         # joint_coord_2 = np.unravel_index(np.argmax(heatmap_scaled), (box_size, box_size))
         # joints_2d[joint_num, :] = joint_coord_2
-        heatmap_scaled = cv2.resize(heatmaps[:, :, joint_num], (0, 0), fx=8, fy=8, interpolation=cv2.INTER_LINEAR)
-        joint_coord = np.unravel_index(np.argmax(heatmap_scaled), (box_size, box_size))
+        heatmap_scaled = cv2.resize(heatmaps[:, :, joint_num], (0, 0), 
+                                    fx=hm_factor, fy=hm_factor, 
+                                    interpolation=cv2.INTER_LINEAR)
+        joint_coord = np.unravel_index(np.argmax(heatmap_scaled), 
+                                       (box_size, box_size))
         joints_2d[joint_num, :] = joint_coord
     return joints_2d
 
@@ -202,12 +204,15 @@ def extract_3d_joints(joints_2d, x_hm, y_hm, z_hm, hm_factor):
         # joint_y = y_hm_scaled[coord_3d_h, coord_3d_w, joint_num] * scaler
         # joint_z = z_hm_scaled[coord_3d_h, coord_3d_w, joint_num] * scaler
         y_2d, x_2d = joints_2d[joint_num][:]
-        joint_x = (hm_pt_interp_bilinear(x_hm[:, :, joint_num], hm_factor,
-                                         (y_2d, x_2d))) * scaler
-        joint_y = (hm_pt_interp_bilinear(y_hm[:, :, joint_num], hm_factor,
-                                         (y_2d, x_2d))) * scaler
-        joint_z = (hm_pt_interp_bilinear(z_hm[:, :, joint_num], hm_factor,
-                                         (y_2d, x_2d))) * scaler
+        joint_x = hm_pt_interp_bilinear(x_hm[:, :, joint_num], 
+                                        hm_factor,
+                                        (y_2d, x_2d)) * scaler
+        joint_y = hm_pt_interp_bilinear(y_hm[:, :, joint_num], 
+                                        hm_factor,
+                                        (y_2d, x_2d)) * scaler
+        joint_z = hm_pt_interp_bilinear(z_hm[:, :, joint_num], 
+                                        hm_factor,
+                                        (y_2d, x_2d)) * scaler
         joints_3d[joint_num, :] = [joint_x, joint_y, joint_z]
     # Subtract the root location to normalize the data
     joints_3d -= joints_3d[14, :]
