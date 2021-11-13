@@ -290,15 +290,15 @@ class PoseAnimation3d:
 
     def ani_init(self):
         for skeleton in self.skeletons:
-            skeleton.set_data([], [])
-            skeleton.set_3d_properties([])
+            skeleton.set_data(np.array([]), np.array([]))
+            skeleton.set_3d_properties(np.array([]))
         return self.skeletons
 
     def __call__(self, joints_3d):
         for i, skeleton in enumerate(self.skeletons):
-            x_pair = [joints_3d[i, 0], joints_3d[self.joint_parents[i], 0]]
-            y_pair = [joints_3d[i, 1], joints_3d[self.joint_parents[i], 1]]
-            z_pair = [joints_3d[i, 2], joints_3d[self.joint_parents[i], 2]]
+            x_pair = np.array([joints_3d[i, 0], joints_3d[self.joint_parents[i], 0]])
+            y_pair = np.array([joints_3d[i, 1], joints_3d[self.joint_parents[i], 1]])
+            z_pair = np.array([joints_3d[i, 2], joints_3d[self.joint_parents[i], 2]])
             skeleton.set_data(x_pair, y_pair)
             skeleton.set_3d_properties(z_pair)
         return self.skeletons
